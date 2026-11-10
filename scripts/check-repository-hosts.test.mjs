@@ -29,6 +29,7 @@ const SHARED_ADDRESS = host("100", "64", "1", "2");
 const METADATA_ADDRESS = host("169", "254", "169", "254");
 const UNIQUE_LOCAL = ["[fd00", ":1]"].join(":");
 const TAILNET = host("box", "tailnet-1234", "ts", "net");
+const PRINTER = host("printer", "local");
 
 /**
  * @param {string} cwd
@@ -97,6 +98,9 @@ describe("check-repository-hosts", () => {
             "A service answers on https://shop.antelopejs.io.",
             "Tests use http://127.0.0.1:5010, http://localhost and https://api.example.test.",
             "Archives go to https://bucket.s3.amazonaws.com.",
+            "if (options.internal) return this.svc;",
+            "COPY Dockerfile.internal settings.local.json tsconfig.internal.json",
+            "Versions 1.0.0-rc.internal, 10.20.0 and OID 1.3.6.1.4.1.10.1.2.3.",
           ].join("\n"),
         },
         message: "docs: name the hosts a reader may use",
@@ -162,7 +166,7 @@ describe("check-repository-hosts", () => {
     ]);
   });
 
-  it("fails shared, link-local, unique local and Tailscale addresses", () => {
+  it("fails shared, link-local, unique local and Tailscale addresses, with or without a scheme", () => {
     const directory = repository("networks", [
       {
         files: {
@@ -171,6 +175,10 @@ describe("check-repository-hosts", () => {
             `http://${METADATA_ADDRESS}/latest`,
             `http://${UNIQUE_LOCAL}:8080`,
             `https://${TAILNET}`,
+            `metadata: ${METADATA_ADDRESS}`,
+            `tailnet: ${TAILNET}:443`,
+            `The upstream is ${NODE_ADDRESS}.`,
+            `printer: ${PRINTER}:631`,
           ].join("\n"),
         },
         message: "chore: add the hosts",
@@ -178,11 +186,15 @@ describe("check-repository-hosts", () => {
     ]);
     const result = check(directory);
     assert.equal(result.status, 1);
-    assert.deepEqual(result.stderr.trim().split("\n").slice(0, 4), [
+    assert.deepEqual(result.stderr.trim().split("\n").slice(0, 8), [
       `hosts.txt:1: names host ${SHARED_ADDRESS}`,
       `hosts.txt:2: names host ${METADATA_ADDRESS}`,
       `hosts.txt:3: names host ${UNIQUE_LOCAL}`,
       `hosts.txt:4: names host ${TAILNET}`,
+      `hosts.txt:5: names host ${METADATA_ADDRESS}`,
+      `hosts.txt:6: names host ${TAILNET}`,
+      `hosts.txt:7: names host ${NODE_ADDRESS}`,
+      `hosts.txt:8: names host ${PRINTER}`,
     ]);
   });
 

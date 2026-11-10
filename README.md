@@ -83,7 +83,7 @@ pnpm run check:hosts
 `pnpm run check:hosts` keeps private deployments out of this public repository:
 
 - `scripts/check-package-hosts.mjs` packs `sdk` and `cli` as `npm publish` would. It fails when a packed file says `staging` or names a host other than the production API, the app domain `antelopejs.io`, `github.com`, `registry.npmjs.org`, or a reserved documentation name such as `example.test`.
-- `scripts/check-repository-hosts.mjs` reads every tracked file, every line a commit added, and every commit message. It fails on a host of ours other than the production ones, a host whose name says staging, or a private-network host. It needs the whole history and refuses a shallow clone.
+- `scripts/check-repository-hosts.mjs` reads every tracked file, every line a commit added, and every commit message. It fails on a host of ours other than the production ones, a host whose name says staging, or a private-network host. It reads a host from a URL, from a name under an `antelopejs` domain, and from a private address or cluster name written without a scheme. It needs the whole history and refuses a shallow clone.
 
 CI runs both commands on every pull request and on every push to `main`.
 

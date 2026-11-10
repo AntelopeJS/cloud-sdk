@@ -3,8 +3,11 @@
  * Keeps private deployments out of this public repository: fails when a
  * tracked file, a line any commit of `HEAD` added, or a commit message names a
  * host of ours that is not production's, a host that says staging, or a
- * private network's. Run from the repository root, with the whole history: a
- * shallow clone fails instead of passing on the commits it lacks.
+ * private network's. A host is read after `://`, as a name of ours, or as a
+ * private-network address or name written without a scheme (a `.internal`,
+ * `.svc`, `.local` or `.lan` name only before a port or a path). Run from the
+ * repository root, with the whole history: a shallow clone fails instead of
+ * passing on the commits it lacks.
  *
  * Prints failures only. Usage: node scripts/check-repository-hosts.mjs
  */

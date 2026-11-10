@@ -20,17 +20,49 @@ const OWN_DOMAIN = /(?:^|\.)antelopejs\.[a-z]{2,}$/;
 /**
  * Names and addresses that only resolve inside a private network or cluster:
  * cluster and Tailscale names, RFC 1918, shared (RFC 6598) and link-local
- * IPv4, and unique local IPv6.
+ * IPv4, and unique local and link-local IPv6.
  */
 const PRIVATE_NETWORK_HOST =
-  /(?:^|\.)(?:internal|local|lan|svc|ts\.net)$|^(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01])|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])|169\.254)(?:\.\d{1,3}){2,3}$|^\[f[cd][0-9a-f]{0,2}:/;
+  /(?:^|\.)(?:internal|local|lan|svc|ts\.net)$|^(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01])|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])|169\.254)(?:\.\d{1,3}){2,3}$|^\[f(?:[cd][0-9a-f]{0,2}|e[89ab][0-9a-f]?):/;
 /**
- * A cluster name or an RFC 1918 address written without a scheme, such as an
- * upstream in a config file. A name that continues, as `settings.local.json`
- * does, is a file, not a host.
+ * Where a host written without a scheme ends: not before a letter, a digit or
+ * a hyphen, nor before a dot that a name continues after, as in
+ * `settings.local.json`. A dot that ends a sentence ends the host.
  */
-const PRIVATE_NETWORK_PATTERN =
-  /\b((?:[a-z0-9-]+\.)+(?:svc|cluster\.local|internal)|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2})(?![a-z0-9.-])/gi;
+const HOST_END = String.raw`(?![a-z0-9-]|\.[a-z0-9])`;
+/** Cluster and Tailscale names, which no source text names otherwise. */
+const CLUSTER_NAME_PATTERN = new RegExp(
+  String.raw`\b((?:[a-z0-9-]+\.)+(?:cluster\.local|ts\.net))` + HOST_END,
+  "gi",
+);
+/**
+ * Private-network names followed by a port or a path, so that property
+ * access such as `options.internal` and file names such as
+ * `Dockerfile.internal` are not hosts.
+ */
+const PRIVATE_NAME_PATTERN =
+  /\b((?:[a-z0-9-]+\.)+(?:internal|svc|local|lan))(?=:\d|\/)/gi;
+/**
+ * A private IPv4 address that is not the tail of a longer dotted number, such
+ * as an OID or a version.
+ */
+const PRIVATE_ADDRESS_PATTERN = new RegExp(
+  String.raw`(?<![\d.])((?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01])|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])|169\.254)(?:\.\d{1,3}){2})` +
+    HOST_END,
+  "g",
+);
+/**
+ * The places a host is read from, each with the host as its first group: a
+ * URL, a name of ours, and a private-network name or address written without
+ * a scheme.
+ */
+const HOST_PATTERNS = [
+  URL_HOST_PATTERN,
+  OWN_HOST_PATTERN,
+  CLUSTER_NAME_PATTERN,
+  PRIVATE_NAME_PATTERN,
+  PRIVATE_ADDRESS_PATTERN,
+];
 
 export const STAGING_PATTERN = /staging/i;
 
@@ -66,14 +98,11 @@ export function isPrivateHost(name) {
  * @returns {Set<string>}
  */
 export function hostsOf(line) {
-  const hosts = [...line.matchAll(URL_HOST_PATTERN)].map(([, host]) => host);
-  const own = [...line.matchAll(OWN_HOST_PATTERN)].map(([host]) => host);
-  const network = [...line.matchAll(PRIVATE_NETWORK_PATTERN)].map(
-    ([host]) => host,
-  );
   return new Set(
-    [...hosts, ...own, ...network].map((host) =>
-      host.toLowerCase().replace(/\.+$/, ""),
+    HOST_PATTERNS.flatMap((pattern) =>
+      [...line.matchAll(pattern)].map(([, host]) =>
+        host.toLowerCase().replace(/\.+$/, ""),
+      ),
     ),
   );
 }
