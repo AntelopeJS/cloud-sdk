@@ -77,7 +77,9 @@ components:
       required: [id, number, environmentId, status, commit, branch, createdAt, finishedAt, trigger, revisionIds]
       properties:
         id: { type: string }
-        number: { type: integer }
+        number:
+          description: Counts up within its environment, so two environments of a project can share a number; order by createdAt and key by id.
+          type: integer
         environmentId: { type: string }
         status: { $ref: '#/components/schemas/DeploymentStatus' }
         commit:
@@ -92,7 +94,13 @@ components:
           type: [string, "null"]
           format: date-time
         trigger:
-          description: What started it. push is a push to the environment's branch, promotion a promotion to the environment, upload a CLI source upload.
+          description: >-
+            What started it.
+            push is a push to the environment's branch, or an update to the pull request a preview environment mirrors.
+            promotion is a commit, branch tip or image someone chose to deploy to the environment.
+            rollback is a return to an earlier revision.
+            upload is a source the CLI uploaded.
+            restart is a redeploy of what the environment already runs, such as after a settings change.
           type: string
           enum: [push, promotion, rollback, upload, restart]
         revisionIds:
@@ -128,10 +136,11 @@ paths:
             items: { $ref: '#/components/schemas/DeploymentStatus' }
         - in: query
           name: cursor
-          description: The nextCursor of the previous page; absent for the first page.
+          description: The nextCursor of the previous page, sent with the same filters; absent for the first page. A cursor the API cannot read is refused.
           schema: { type: string }
         - in: query
           name: limit
+          description: Deployments per page; a value outside 1 to 100 is refused.
           schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
       responses:
         '200':

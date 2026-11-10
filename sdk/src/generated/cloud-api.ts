@@ -650,6 +650,7 @@ export interface components {
         /** @description One deployment of a project to one of its environments, and the revisions it rolled out. */
         ProjectDeployment: {
             id: string;
+            /** @description Counts up within its environment, so two environments of a project can share a number; order by createdAt and key by id. */
             number: number;
             environmentId: string;
             status: components["schemas"]["DeploymentStatus"];
@@ -665,7 +666,7 @@ export interface components {
              */
             finishedAt: string | null;
             /**
-             * @description What started it. push is a push to the environment's branch, promotion a promotion to the environment, upload a CLI source upload.
+             * @description What started it. push is a push to the environment's branch, or an update to the pull request a preview environment mirrors. promotion is a commit, branch tip or image someone chose to deploy to the environment. rollback is a return to an earlier revision. upload is a source the CLI uploaded. restart is a redeploy of what the environment already runs, such as after a settings change.
              * @enum {string}
              */
             trigger: "push" | "promotion" | "rollback" | "upload" | "restart";
@@ -1148,8 +1149,9 @@ export interface operations {
                 environmentId?: string;
                 /** @description Only the deployments in one of these statuses. */
                 status?: components["schemas"]["DeploymentStatus"][];
-                /** @description The nextCursor of the previous page; absent for the first page. */
+                /** @description The nextCursor of the previous page, sent with the same filters; absent for the first page. A cursor the API cannot read is refused. */
                 cursor?: string;
+                /** @description Deployments per page; a value outside 1 to 100 is refused. */
                 limit?: number;
             };
             header?: never;
