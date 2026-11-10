@@ -1,0 +1,182 @@
+import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { after, describe, it } from "node:test";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const CHECK = fileURLToPath(
+  new URL("check-repository-hosts.mjs", import.meta.url),
+);
+const root = mkdtempSync(path.join(tmpdir(), "repository-hosts-test-"));
+
+/**
+ * A private host for a fixture, joined at run time so this file does not fail
+ * the scan it tests.
+ * @param {...string} labels
+ */
+const host = (...labels) => labels.join(".");
+const UNLISTED = host("unlisted", "antelopejs", "cloud");
+const REGISTRY = host("registry", "unlisted", "antelopejs", "cloud");
+const STAGED = host("shop-staging", "acme", "dev");
+const CLUSTER = host("db", "cluster", "internal");
+const PRIVATE_ADDRESS = host("10", "0", "3", "17");
+
+/**
+ * @param {string} cwd
+ * @param {string[]} args
+ */
+function git(cwd, args) {
+  return execFileSync(
+    "git",
+    [
+      "-c",
+      "user.name=Test",
+      "-c",
+      "user.email=test@example.test",
+      "-c",
+      "commit.gpgsign=false",
+      ...args,
+    ],
+    { cwd, encoding: "utf8" },
+  );
+}
+
+/**
+ * A repository with one commit per entry, each writing its files and
+ * committing them with its message.
+ * @param {string} name
+ * @param {{ files: Record<string, string>, message: string }[]} commits
+ */
+function repository(name, commits) {
+  const directory = path.join(root, name);
+  git(root, ["init", "--quiet", "--initial-branch=main", name]);
+  for (const { files, message } of commits) {
+    for (const [file, text] of Object.entries(files))
+      writeFileSync(path.join(directory, file), text);
+    git(directory, ["add", "--all"]);
+    git(directory, ["commit", "--quiet", "--message", message]);
+  }
+  return directory;
+}
+
+/** @param {string} directory */
+function check(directory) {
+  return spawnSync(process.execPath, [CHECK], {
+    cwd: directory,
+    encoding: "utf8",
+  });
+}
+
+/**
+ * The short id of a commit, as findings name it.
+ * @param {string} directory
+ * @param {string} revision
+ */
+function commitOf(directory, revision) {
+  return git(directory, ["rev-parse", revision]).trim().slice(0, 12);
+}
+
+describe("check-repository-hosts", () => {
+  after(() => rmSync(root, { recursive: true, force: true }));
+
+  it("passes production, reserved, loopback and third-party hosts", () => {
+    const directory = repository("clean", [
+      {
+        files: {
+          "README.md": [
+            "The client talks to https://api.antelopejs.cloud by default.",
+            "A service answers on https://shop.antelopejs.io.",
+            "Tests use http://127.0.0.1:5010, http://localhost and https://api.example.test.",
+            "Archives go to https://bucket.s3.amazonaws.com.",
+          ].join("\n"),
+        },
+        message: "docs: name the hosts a reader may use",
+      },
+    ]);
+    const result = check(directory);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stderr, "");
+  });
+
+  it("fails a tracked file that names a private host", () => {
+    const directory = repository("tree", [
+      {
+        files: {
+          "config.ts": [
+            `export const api = "https://${UNLISTED}";`,
+            `export const shop = "https://${STAGED}";`,
+            `export const db = "postgres://${CLUSTER}:5432/app";`,
+            `export const node = "http://${PRIVATE_ADDRESS}:8080";`,
+          ].join("\n"),
+        },
+        message: "feat: add the endpoints",
+      },
+    ]);
+    const result = check(directory);
+    const commit = commitOf(directory, "HEAD");
+    assert.equal(result.status, 1);
+    assert.deepEqual(result.stderr.trim().split("\n"), [
+      `config.ts:1: names host ${UNLISTED}`,
+      `config.ts:2: names host ${STAGED}`,
+      `config.ts:3: names host ${CLUSTER}`,
+      `config.ts:4: names host ${PRIVATE_ADDRESS}`,
+      `${commit}:config.ts: names host ${UNLISTED}`,
+      `${commit}:config.ts: names host ${STAGED}`,
+      `${commit}:config.ts: names host ${CLUSTER}`,
+      `${commit}:config.ts: names host ${PRIVATE_ADDRESS}`,
+    ]);
+  });
+
+  it("fails a host a past commit added, though the tree no longer names it", () => {
+    const directory = repository("history", [
+      {
+        files: { ".npmrc": `registry=https://${REGISTRY}/\n` },
+        message: "build: use the registry",
+      },
+      {
+        files: { ".npmrc": "registry=https://registry.npmjs.org/\n" },
+        message: "build: use the public registry",
+      },
+    ]);
+    const result = check(directory);
+    assert.equal(result.status, 1);
+    assert.equal(
+      result.stderr.trim(),
+      `${commitOf(directory, "HEAD~1")}:.npmrc: names host ${REGISTRY}`,
+    );
+  });
+
+  it("fails a commit message that names a private host", () => {
+    const directory = repository("message", [
+      {
+        files: { "README.md": "# Client\n" },
+        message: `docs: tested against ${UNLISTED}`,
+      },
+    ]);
+    const result = check(directory);
+    assert.equal(result.status, 1);
+    assert.equal(
+      result.stderr.trim(),
+      `${commitOf(directory, "HEAD")} message: names host ${UNLISTED}`,
+    );
+  });
+
+  it("refuses a shallow clone, whose missing commits it cannot read", () => {
+    const source = repository("deep", [
+      { files: { "a.txt": "a\n" }, message: "chore: first" },
+      { files: { "b.txt": "b\n" }, message: "chore: second" },
+    ]);
+    git(root, [
+      "clone",
+      "--quiet",
+      "--depth=1",
+      pathToFileURL(source).href,
+      "shallow",
+    ]);
+    const result = check(path.join(root, "shallow"));
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /history is shallow/);
+  });
+});
