@@ -87,20 +87,6 @@ components:
         services:
           type: array
           items: { $ref: '#/components/schemas/Service' }
-    EnvironmentList: { $ref: 'environments.yaml#/schemas/EnvironmentList' }
-    EnvironmentDetail: { $ref: 'environments.yaml#/schemas/EnvironmentDetail' }
-    EnvironmentPreview: { $ref: 'environments.yaml#/schemas/EnvironmentPreview' }
-    EnvironmentDeployment: { $ref: 'environments.yaml#/schemas/EnvironmentDeployment' }
-    EnvironmentService: { $ref: 'environments.yaml#/schemas/EnvironmentService' }
-    NewEnvironment: { $ref: 'environments.yaml#/schemas/NewEnvironment' }
-    CreatedEnvironment: { $ref: 'environments.yaml#/schemas/CreatedEnvironment' }
-    Promotion: { $ref: 'environments.yaml#/schemas/Promotion' }
-    PromotionReceipt: { $ref: 'environments.yaml#/schemas/PromotionReceipt' }
-    ProjectRepository: { $ref: 'environments.yaml#/schemas/ProjectRepository' }
-    EnvironmentHealth: { $ref: 'environments.yaml#/schemas/EnvironmentHealth' }
-    ServiceHealth: { $ref: 'environments.yaml#/schemas/ServiceHealth' }
-    RevisionCheck: { $ref: 'environments.yaml#/schemas/RevisionCheck' }
-    RuntimeHealth: { $ref: 'environments.yaml#/schemas/RuntimeHealth' }
     Project:
       type: object
       required: [id, slug, region, environments]

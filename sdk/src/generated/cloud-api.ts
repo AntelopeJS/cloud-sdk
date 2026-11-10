@@ -496,132 +496,6 @@ export interface components {
             name: string;
             services: components["schemas"]["Service"][];
         };
-        EnvironmentList: {
-            environments: components["schemas"]["EnvironmentDetail"][];
-        };
-        /** @description An environment of a project, the git branch it builds and what it serves. */
-        EnvironmentDetail: {
-            id: string;
-            name: string;
-            /** @description The branch the environment builds. A push to it deploys a durable environment; a preview follows its pull request's head branch, which pull request updates deploy. Null for an environment the CLI deploys. */
-            branch: string | null;
-            /**
-             * @description The status of its services together.
-             * @enum {string}
-             */
-            state: "live" | "build" | "waiting" | "sleep" | "failed" | "unknown";
-            /**
-             * Format: uri
-             * @description The address of its first public service; null when none answers on one.
-             */
-            url: string | null;
-            /** @description A protected environment refuses deletion. */
-            isProtected: boolean;
-            /** @description The pull request a preview environment mirrors; null for a durable environment. */
-            preview: components["schemas"]["EnvironmentPreview"] | null;
-            /** @description The last deployment that went live; null before the first one. */
-            serving: components["schemas"]["EnvironmentDeployment"] | null;
-            /** @description The latest deployment asked of the environment. It differs from serving while it rolls out, or after it failed and serving kept the traffic. */
-            target: components["schemas"]["EnvironmentDeployment"] | null;
-            services: components["schemas"]["EnvironmentService"][];
-        };
-        EnvironmentPreview: {
-            sourceEnvironmentId: string;
-            repository: string;
-            pullRequestNumber: number;
-            headBranch: string;
-        };
-        EnvironmentDeployment: {
-            id: string;
-            number: number;
-            /** @enum {string} */
-            status: "queued" | "building" | "checking" | "switching" | "succeeded" | "failed" | "cancelled";
-            /** @description The commit it built; null for a CLI upload or a rollback. */
-            commit: string | null;
-            branch: string | null;
-            /** Format: date-time */
-            createdAt: string;
-        };
-        EnvironmentService: {
-            id: string;
-            name: string;
-            /** @description The revision serving traffic; null before the first one goes live. */
-            servingRevisionId: string | null;
-            /** @description The revision last submitted; it equals servingRevisionId once live. */
-            targetRevisionId: string | null;
-        };
-        NewEnvironment: {
-            /** @description Stored as a slug. */
-            name: string;
-            /** @description The branch the environment builds; absent for one the CLI deploys. */
-            branch?: string | null;
-            /** @description An environment of the same project whose services the new one copies. */
-            cloneFrom?: string | null;
-            autoSleep?: boolean;
-        };
-        CreatedEnvironment: {
-            environmentId: string;
-            name: string;
-        };
-        /** @description What to put the environment on, a commit of the project's repository or the tip of one of its branches. */
-        Promotion: {
-            commit: string;
-        } | {
-            /** @description A valid git branch name; the server refuses any other with 400. */
-            branch: string;
-        };
-        PromotionReceipt: {
-            deploymentId: string;
-            /** @description The commit the deployment builds, the branch tip read when the promotion named a branch. */
-            commit: string;
-        };
-        ProjectRepository: {
-            /** @description The GitHub repository the project builds from, as owner/name. It is the linked one, else the one most of its services build from; null when neither exists. */
-            repository: string | null;
-        };
-        EnvironmentHealth: {
-            environmentId: string;
-            services: components["schemas"]["ServiceHealth"][];
-        };
-        ServiceHealth: {
-            serviceId: string;
-            name: string;
-            /** @description The path the service is set to probe for readiness over HTTP; null for a TCP connect. A revision keeps the path it was deployed with, so a change applies at the next deployment. */
-            readinessPath: string | null;
-            /** @description The path the service is set to probe for liveness over HTTP, the readiness path when it sets none; null for a TCP connect. A change applies at the next deployment. */
-            livenessPath: string | null;
-            /** @description The start-up check of the target revision, which gates the traffic switch; null before the first revision. */
-            check: components["schemas"]["RevisionCheck"] | null;
-            /** @description What the platform last reported of the running workload; null when it reported nothing. */
-            runtime: components["schemas"]["RuntimeHealth"] | null;
-        };
-        RevisionCheck: {
-            revisionId: string;
-            number: number;
-            /**
-             * @description Preparing and pending revisions are still being checked.
-             * @enum {string}
-             */
-            state: "preparing" | "pending" | "succeeded" | "failed";
-            /**
-             * Format: date-time
-             * @description When the check started; null before it did.
-             */
-            startedAt: string | null;
-            /** @description Why the revision never went live; null unless it failed. */
-            failure: {
-                /** @enum {string} */
-                reason: "image_pull" | "crash_loop" | "runtime" | "scheduling" | "health_check" | "no_pod" | "refused";
-                detail: string | null;
-            } | null;
-        };
-        RuntimeHealth: {
-            /** @enum {string} */
-            phase: "running" | "starting" | "pending" | "sleeping" | "failed" | "unknown" | "unschedulable" | "image-pull-failed" | "stalled";
-            message: string | null;
-            /** Format: date-time */
-            observedAt: string;
-        };
         Project: {
             id: string;
             slug: string;
@@ -761,6 +635,132 @@ export interface components {
                 /** @description Days support can still recover a detached volume's latest snapshot. */
                 removedRetentionDays: number;
             };
+        };
+        ProjectRepository: {
+            /** @description The GitHub repository the project builds from, as owner/name. It is the linked one, else the one most of its services build from; null when neither exists. */
+            repository: string | null;
+        };
+        EnvironmentPreview: {
+            sourceEnvironmentId: string;
+            repository: string;
+            pullRequestNumber: number;
+            headBranch: string;
+        };
+        EnvironmentDeployment: {
+            id: string;
+            number: number;
+            /** @enum {string} */
+            status: "queued" | "building" | "checking" | "switching" | "succeeded" | "failed" | "cancelled";
+            /** @description The commit it built; null for a CLI upload or a rollback. */
+            commit: string | null;
+            branch: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        EnvironmentService: {
+            id: string;
+            name: string;
+            /** @description The revision serving traffic; null before the first one goes live. */
+            servingRevisionId: string | null;
+            /** @description The revision last submitted; it equals servingRevisionId once live. */
+            targetRevisionId: string | null;
+        };
+        /** @description An environment of a project, the git branch it builds and what it serves. */
+        EnvironmentDetail: {
+            id: string;
+            name: string;
+            /** @description The branch the environment builds. A push to it deploys a durable environment; a preview follows its pull request's head branch, which pull request updates deploy. Null for an environment the CLI deploys. */
+            branch: string | null;
+            /**
+             * @description The status of its services together.
+             * @enum {string}
+             */
+            state: "live" | "build" | "waiting" | "sleep" | "failed" | "unknown";
+            /**
+             * Format: uri
+             * @description The address of its first public service; null when none answers on one.
+             */
+            url: string | null;
+            /** @description A protected environment refuses deletion. */
+            isProtected: boolean;
+            /** @description The pull request a preview environment mirrors; null for a durable environment. */
+            preview: components["schemas"]["EnvironmentPreview"] | null;
+            /** @description The last deployment that went live; null before the first one. */
+            serving: components["schemas"]["EnvironmentDeployment"] | null;
+            /** @description The latest deployment asked of the environment. It differs from serving while it rolls out, or after it failed and serving kept the traffic. */
+            target: components["schemas"]["EnvironmentDeployment"] | null;
+            services: components["schemas"]["EnvironmentService"][];
+        };
+        EnvironmentList: {
+            environments: components["schemas"]["EnvironmentDetail"][];
+        };
+        NewEnvironment: {
+            /** @description Stored as a slug. */
+            name: string;
+            /** @description The branch the environment builds; absent for one the CLI deploys. */
+            branch?: string | null;
+            /** @description An environment of the same project whose services the new one copies. */
+            cloneFrom?: string | null;
+            autoSleep?: boolean;
+        };
+        CreatedEnvironment: {
+            environmentId: string;
+            name: string;
+        };
+        /** @description What to put the environment on, a commit of the project's repository or the tip of one of its branches. */
+        Promotion: {
+            commit: string;
+        } | {
+            /** @description A valid git branch name; the server refuses any other with 400. */
+            branch: string;
+        };
+        PromotionReceipt: {
+            deploymentId: string;
+            /** @description The commit the deployment builds, the branch tip read when the promotion named a branch. */
+            commit: string;
+        };
+        RevisionCheck: {
+            revisionId: string;
+            number: number;
+            /**
+             * @description Preparing and pending revisions are still being checked.
+             * @enum {string}
+             */
+            state: "preparing" | "pending" | "succeeded" | "failed";
+            /**
+             * Format: date-time
+             * @description When the check started; null before it did.
+             */
+            startedAt: string | null;
+            /** @description Why the revision never went live; null unless it failed. */
+            failure: {
+                /** @enum {string} */
+                reason: "image_pull" | "crash_loop" | "runtime" | "scheduling" | "health_check" | "no_pod" | "refused";
+                detail: string | null;
+            } | null;
+        };
+        RuntimeHealth: {
+            /** @enum {string} */
+            phase: "running" | "starting" | "pending" | "sleeping" | "failed" | "unknown" | "unschedulable" | "image-pull-failed" | "stalled";
+            message: string | null;
+            /** Format: date-time */
+            observedAt: string;
+        };
+        ServiceHealth: {
+            serviceId: string;
+            name: string;
+            /** @description The path the service is set to probe for readiness over HTTP; null for a TCP connect. A revision keeps the path it was deployed with, so a change applies at the next deployment. */
+            readinessPath: string | null;
+            /** @description The path the service is set to probe for liveness over HTTP, the readiness path when it sets none; null for a TCP connect. A change applies at the next deployment. */
+            livenessPath: string | null;
+            /** @description The start-up check of the target revision, which gates the traffic switch; null before the first revision. */
+            check: components["schemas"]["RevisionCheck"] | null;
+            /** @description What the platform last reported of the running workload; null when it reported nothing. */
+            runtime: components["schemas"]["RuntimeHealth"] | null;
+        };
+        EnvironmentHealth: {
+            environmentId: string;
+            services: components["schemas"]["ServiceHealth"][];
         };
         /** @description A monthly amount in the plan's currency. A plan that rates nothing a database holds includes it, with no amount to show. */
         MonthlyCost: {
