@@ -16,12 +16,10 @@ const NODE_TEST_CALLS = {
   name: ["describe", "test"],
 } as const;
 
-/** A `describe` block is not a function anyone splits. */
 const TEST_RULES = {
   "eslint/max-lines-per-function": "off",
 } as const;
 
-/** Findings the package carried before this lint configuration, left for their own change. */
 const KNOWN_DEBT = [
   {
     files: ["src/config.ts"],
@@ -29,11 +27,6 @@ const KNOWN_DEBT = [
   },
 ] as const;
 
-/**
- * Rules Biome's recommended set enforced as errors that the preset leaves off.
- * The `no-use-before-define` options limit it to reads in the temporal dead
- * zone, as Biome's rule did.
- */
 const BIOME_ERRORS = {
   "eslint/array-callback-return": "error",
   "eslint/no-case-declarations": "error",
