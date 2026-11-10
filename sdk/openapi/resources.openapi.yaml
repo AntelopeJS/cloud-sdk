@@ -1,0 +1,274 @@
+openapi: 3.1.0
+info:
+  title: AntelopeJS Cloud resources API
+  version: 1.0.0
+servers:
+  - url: https://api.antelopejs.cloud
+components:
+  schemas:
+    DatabaseEngine:
+      type: string
+      enum: [mongodb, postgres, mysql, redis, valkey]
+    DatabaseMode:
+      description: One instance on one volume, or a replicated cluster.
+      type: string
+      enum: [single, ha]
+    AppTier:
+      type: string
+      enum: [free, hobby, pro]
+    MonthlyCost:
+      description: A monthly amount in the plan's currency. A plan that rates nothing a database holds includes it, with no amount to show.
+      oneOf:
+        - type: object
+          required: [included, currency]
+          properties:
+            included: { const: true }
+            currency: { type: string }
+        - type: object
+          required: [included, currency, floor, ceiling]
+          properties:
+            included: { const: false }
+            currency: { type: string }
+            floor:
+              description: The reserved allocation of every instance held around the clock, plus the volumes.
+              type: number
+            ceiling:
+              description: The limits of every instance held around the clock, plus the volumes.
+              type: number
+    DatabaseFigures:
+      type: object
+      required: [label, version, volumeGb, instances, backups, connectionVariable, monthlyCost]
+      properties:
+        label: { type: string }
+        version: { type: string }
+        volumeGb:
+          description: Size of each instance's volume.
+          type: number
+        instances: { type: integer }
+        backups:
+          description: Whether its volume is backed up off the cluster.
+          type: boolean
+        connectionVariable:
+          description: The variable that carries its connection string into the project.
+          type: string
+        monthlyCost:
+          description: Null when no rates can be read.
+          oneOf:
+            - $ref: '#/components/schemas/MonthlyCost'
+            - type: "null"
+    EnvironmentResource:
+      description: A database the environment runs.
+      allOf:
+        - $ref: '#/components/schemas/DatabaseFigures'
+        - type: object
+          required: [serviceId, name, appName, engine, mode, module]
+          properties:
+            serviceId: { type: string }
+            name: { type: string }
+            appName: { type: string }
+            engine: { $ref: '#/components/schemas/DatabaseEngine' }
+            mode: { $ref: '#/components/schemas/DatabaseMode' }
+            module:
+              description: The npm package of the module it serves; null when it serves none.
+              type: [string, "null"]
+    EnvironmentResources:
+      type: object
+      required: [environmentId, resources]
+      properties:
+        environmentId: { type: string }
+        resources:
+          type: array
+          items: { $ref: '#/components/schemas/EnvironmentResource' }
+    ResourceModules:
+      type: object
+      required: [modules]
+      properties:
+        modules:
+          description: The npm package names of the project's modules, as `antelope.config.ts` lists them.
+          type: array
+          maxItems: 500
+          items: { type: string, minLength: 1, maxLength: 214 }
+    PlannedResource:
+      description: A database Cloud would create for a module.
+      allOf:
+        - $ref: '#/components/schemas/DatabaseFigures'
+        - type: object
+          required: [module, engine, mode, name]
+          properties:
+            module: { type: string }
+            engine: { $ref: '#/components/schemas/DatabaseEngine' }
+            mode: { $ref: '#/components/schemas/DatabaseMode' }
+            name:
+              description: The service name the apply creates it under. The engine's name, or `<engine>-2`, `<engine>-3` when a service of the environment, a retired database included, already holds it.
+              type: string
+    ExistingResource:
+      description: A database of the environment that already satisfies a module.
+      type: object
+      required: [module, serviceId, name, engine]
+      properties:
+        module: { type: string }
+        serviceId: { type: string }
+        name: { type: string }
+        engine: { $ref: '#/components/schemas/DatabaseEngine' }
+    UnprovidedResource:
+      description: A module whose need Cloud cannot provide.
+      oneOf:
+        - type: object
+          required: [module, resource, reason]
+          properties:
+            module: { type: string }
+            resource: { type: string }
+            reason:
+              description: Cloud does not run it.
+              const: not_offered
+        - type: object
+          required: [module, resource, reason, requiredTier]
+          properties:
+            module: { type: string }
+            resource: { type: string }
+            reason:
+              description: Cloud runs it, but no mode of it is on the workspace's plan.
+              const: not_on_plan
+            requiredTier:
+              description: The cheapest tier that runs it.
+              $ref: '#/components/schemas/AppTier'
+    CeilingUse:
+      description: A count held against a ceiling, before and after the plan is applied.
+      type: object
+      required: [used, ceiling, afterApply]
+      properties:
+        used: { type: integer }
+        ceiling: { type: integer }
+        afterApply:
+          description: '`used` plus what the plan creates.'
+          type: integer
+    ResourcePlanLimits:
+      type: object
+      required: [tier, planName, servicesPerEnvironment, databasesPerEnvironment]
+      properties:
+        tier: { $ref: '#/components/schemas/AppTier' }
+        planName: { type: [string, "null"] }
+        servicesPerEnvironment: { $ref: '#/components/schemas/CeilingUse' }
+        databasesPerEnvironment:
+          description: The databases the environment may hold, where the tier's topology caps them (Free); null where it does not.
+          oneOf:
+            - $ref: '#/components/schemas/CeilingUse'
+            - type: "null"
+    ResourcePlanRefusal:
+      description: |
+        Why an apply of the plan's databases is refused. Each has a stable error key:
+        `preview_environment` is `cloud.errors.resources.preview_environment`,
+        `services_per_environment` is `cloud.errors.resources.over_service_limit` and
+        `databases_per_environment` is `cloud.errors.resources.over_database_limit`.
+      type: string
+      enum: [preview_environment, services_per_environment, databases_per_environment]
+    ResourcePlan:
+      description: What applying a project's modules to an environment would do.
+      type: object
+      required: [create, existing, unprovided, cost, limits, refusals, canApply]
+      properties:
+        create:
+          type: array
+          items: { $ref: '#/components/schemas/PlannedResource' }
+        existing:
+          type: array
+          items: { $ref: '#/components/schemas/ExistingResource' }
+        unprovided:
+          type: array
+          items: { $ref: '#/components/schemas/UnprovidedResource' }
+        cost:
+          description: Summed over `create`; null when no rates can be read.
+          oneOf:
+            - $ref: '#/components/schemas/MonthlyCost'
+            - type: "null"
+        limits: { $ref: '#/components/schemas/ResourcePlanLimits' }
+        refusals:
+          description: Every reason the apply is refused, in the order creation would meet them. Empty when there is nothing to create.
+          type: array
+          items: { $ref: '#/components/schemas/ResourcePlanRefusal' }
+        canApply:
+          description: False when `refusals` is not empty. The apply then answers 409 before any write.
+          type: boolean
+    AppliedResources:
+      type: object
+      required: [created, plan]
+      properties:
+        created:
+          type: array
+          items: { $ref: '#/components/schemas/EnvironmentResource' }
+        plan:
+          description: The plan that remains once the databases are created.
+          $ref: '#/components/schemas/ResourcePlan'
+paths:
+  /api/cloud/projects/{projectId}/environments/{environmentId}/resources:
+    get:
+      operationId: readEnvironmentResources
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: environmentId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnvironmentResources' }
+        default: { $ref: 'cloud.openapi.yaml#/components/responses/Error' }
+  /api/cloud/projects/{projectId}/environments/{environmentId}/resource-plan:
+    post:
+      operationId: planResources
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: environmentId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResourceModules' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResourcePlan' }
+        default: { $ref: 'cloud.openapi.yaml#/components/responses/Error' }
+  /api/cloud/projects/{projectId}/environments/{environmentId}/resource-plan/apply:
+    post:
+      operationId: applyResources
+      description: |
+        Creates the databases the modules need, from a plan the server recomputes
+        under the environment's apply lock. A plan with `refusals` is refused with
+        409 and the error key of its first refusal, before any write. Another
+        worker holding the lock is answered 503 with `Retry-After`.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: environmentId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResourceModules' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppliedResources' }
+        default: { $ref: 'cloud.openapi.yaml#/components/responses/Error' }

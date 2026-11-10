@@ -1,0 +1,570 @@
+openapi: 3.1.0
+info:
+  title: AntelopeJS Cloud CLI API
+  version: 1.0.0
+servers:
+  - url: https://api.antelopejs.cloud
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Error:
+      description: Stable API error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      description: A canonical machine-readable error code, as a plain string or named field.
+      oneOf:
+        - type: string
+        - type: object
+          properties:
+            code: { type: string }
+            error: { type: string }
+            message: { type: string }
+          anyOf:
+            - required: [code]
+            - required: [error]
+            - required: [message]
+    DeviceAuthorization:
+      type: object
+      required: [device_code, user_code, verification_uri, verification_uri_complete, expires_in, interval]
+      properties:
+        device_code: { type: string }
+        user_code: { type: string }
+        verification_uri: { type: string, format: uri }
+        verification_uri_complete: { type: string, format: uri }
+        expires_in: { type: integer }
+        interval: { type: integer }
+    DeviceToken:
+      type: object
+      required: [access_token, token_type, workspace_id]
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, const: Bearer }
+        workspace_id: { type: string }
+        workspace_name:
+          description: Name of the workspace the token is for; absent on servers that predate it.
+          type: string
+    VariableOrigin: { $ref: './variables.parts.yaml#/schemas/VariableOrigin' }
+    EnvironmentVariable: { $ref: './variables.parts.yaml#/schemas/EnvironmentVariable' }
+    EnvironmentVariableList: { $ref: './variables.parts.yaml#/schemas/EnvironmentVariableList' }
+    VariableWrite: { $ref: './variables.parts.yaml#/schemas/VariableWrite' }
+    Service:
+      type: object
+      required: [id, name, status, primaryHost, deployment]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        status: { type: string }
+        primaryHost: { type: [string, "null"] }
+        linkedServiceIds:
+          description: The services this one reads a variable from; deploy ships them first. Absent from an API older than this field.
+          type: array
+          items: { type: string }
+        deployment:
+          description: The deployment that shipped the service; null before the first one.
+          oneOf:
+            - $ref: '#/components/schemas/ServiceDeployment'
+            - type: "null"
+    ServiceDeployment:
+      description: The deployment a service is running. Services shipped together share it.
+      type: object
+      required: [number, occurredAt]
+      properties:
+        number: { type: integer }
+        occurredAt: { type: string, format: date-time }
+    Environment:
+      type: object
+      required: [id, name, services]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        services:
+          type: array
+          items: { $ref: '#/components/schemas/Service' }
+    EnvironmentList: { $ref: 'environments.yaml#/schemas/EnvironmentList' }
+    EnvironmentDetail: { $ref: 'environments.yaml#/schemas/EnvironmentDetail' }
+    EnvironmentPreview: { $ref: 'environments.yaml#/schemas/EnvironmentPreview' }
+    EnvironmentDeployment: { $ref: 'environments.yaml#/schemas/EnvironmentDeployment' }
+    EnvironmentService: { $ref: 'environments.yaml#/schemas/EnvironmentService' }
+    NewEnvironment: { $ref: 'environments.yaml#/schemas/NewEnvironment' }
+    CreatedEnvironment: { $ref: 'environments.yaml#/schemas/CreatedEnvironment' }
+    Promotion: { $ref: 'environments.yaml#/schemas/Promotion' }
+    PromotionReceipt: { $ref: 'environments.yaml#/schemas/PromotionReceipt' }
+    ProjectRepository: { $ref: 'environments.yaml#/schemas/ProjectRepository' }
+    EnvironmentHealth: { $ref: 'environments.yaml#/schemas/EnvironmentHealth' }
+    ServiceHealth: { $ref: 'environments.yaml#/schemas/ServiceHealth' }
+    RevisionCheck: { $ref: 'environments.yaml#/schemas/RevisionCheck' }
+    RuntimeHealth: { $ref: 'environments.yaml#/schemas/RuntimeHealth' }
+    Project:
+      type: object
+      required: [id, slug, region, environments]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        region: { type: string }
+        environments:
+          type: array
+          items: { $ref: '#/components/schemas/Environment' }
+    ProjectList:
+      type: object
+      required: [projects]
+      properties:
+        projects:
+          type: array
+          items:
+            type: object
+            required: [id, slug, status]
+            properties:
+              id: { type: string }
+              slug: { type: string }
+              status: { type: string }
+    DeploymentReceipt:
+      type: object
+      required: [deploymentId, buildId, status]
+      properties:
+        deploymentId: { type: string }
+        buildId: { type: string }
+        status: { type: string, const: queued }
+    ActiveBuild:
+      description: A build of the service still queued or running, and the deployment it belongs to.
+      type: object
+      required: [id, deploymentId, status, queuePosition, createdAt]
+      properties:
+        id: { type: string }
+        deploymentId: { type: string }
+        status: { type: string, enum: [queued, starting, running] }
+        queuePosition: { type: [integer, "null"] }
+        createdAt: { type: string, format: date-time }
+    DeploymentHistory:
+      type: object
+      required: [revisions, desiredRevisionId]
+      properties:
+        activeBuilds:
+          type: array
+          items: { $ref: '#/components/schemas/ActiveBuild' }
+        desiredRevisionId: { type: [string, "null"] }
+        revisions:
+          type: array
+          items:
+            type: object
+            required: [id, number, isDesired, canRollback]
+            properties:
+              id: { type: string }
+              number: { type: integer }
+              isDesired: { type: boolean }
+              canRollback: { type: boolean }
+              state:
+                description: Where the revision is; preparing and pending ones are still rolling out.
+                type: string
+                enum: [preparing, pending, succeeded, failed]
+              deploymentId:
+                description: The deployment that rolls the revision out; null when none of the recent ones links to it.
+                type: [string, "null"]
+    DeploymentDetail:
+      type: object
+      required: [id, status, failure]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        failure:
+          description: Why the deployment failed; null unless it did.
+          oneOf:
+            - type: object
+              required: [key]
+              properties:
+                key: { type: string }
+                params: { type: object, additionalProperties: true }
+            - type: "null"
+        builds:
+          description: The deployment's builds; a failed one carries why it failed.
+          type: array
+          items: { $ref: '#/components/schemas/DeploymentBuild' }
+    DeploymentBuild:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        failureReason:
+          description: Why the build failed, read from its log; null unless it did.
+          oneOf:
+            - type: object
+              required: [code, platform, summary]
+              properties:
+                code: { type: string }
+                platform:
+                  description: The platform failed, not the source; retrying the same commit is the way out.
+                  type: boolean
+                summary: { type: string }
+                step: { type: [integer, "null"] }
+            - type: "null"
+    WorkspaceProvisioning:
+      description: Whether the workspace can build and deploy yet, and why not.
+      type: object
+      required: [phase, owner, reasonCode, retryAt, canRetry]
+      properties:
+        phase: { type: string, enum: [pending, reconciling, ready, blocked, revoking, revoked] }
+        owner: { type: [string, "null"] }
+        reasonCode: { type: [string, "null"] }
+        retryAt: { type: [string, "null"], format: date-time }
+        canRetry: { type: boolean }
+    OnboardingState:
+      type: object
+      required: [canCreateProjects, regions, defaultRegion]
+      properties:
+        canCreateProjects: { type: boolean }
+        regions:
+          type: array
+          items: { type: string }
+        defaultRegion: { type: string }
+    NewProject:
+      type: object
+      required: [slug]
+      properties:
+        slug: { type: string }
+        region: { type: string }
+    CreatedProject:
+      type: object
+      required: [projectId, slug, region, environmentId]
+      properties:
+        projectId: { type: string }
+        slug: { type: string }
+        region: { type: string }
+        environmentId: { type: string }
+        serviceId: { type: [string, "null"] }
+    NewUploadService:
+      type: object
+      required: [name, appName, source]
+      properties:
+        name: { type: string }
+        appName: { type: string }
+        source:
+          type: object
+          required: [type]
+          properties:
+            type: { type: string, const: upload }
+        port: { type: [integer, "null"] }
+        isPublic: { type: boolean }
+    CreatedService:
+      type: object
+      required: [serviceId, name, appName]
+      properties:
+        serviceId: { type: string }
+        name: { type: string }
+        appName: { type: string }
+    ServicePricing:
+      type: object
+      required: [currency, cpuHourUnitPrice, memoryHourUnitPrice, hoursPerMonth]
+      properties:
+        currency: { type: string }
+        cpuHourUnitPrice: { type: number }
+        memoryHourUnitPrice: { type: number }
+        hoursPerMonth: { type: number }
+    ServiceBounds:
+      type: object
+      required: [replicas, cpu, memory]
+      properties:
+        replicas:
+          type: object
+          required: [min, max]
+          properties:
+            min: { type: integer }
+            max: { type: integer }
+        cpu: { type: number }
+        memory: { type: number }
+    ServiceSettings:
+      type: object
+      required: [serviceId, scaling, volumeLimits]
+      properties:
+        serviceId: { type: string }
+        scaling:
+          type: object
+          required: [bounds, replicaLimit, pricing]
+          properties:
+            bounds: { $ref: '#/components/schemas/ServiceBounds' }
+            replicaLimit: { type: integer }
+            pricing:
+              oneOf:
+                - $ref: '#/components/schemas/ServicePricing'
+                - type: "null"
+        volumeLimits:
+          type: object
+          required: [minGb, maxGb, removedRetentionDays]
+          properties:
+            minGb: { type: integer }
+            maxGb: { type: integer }
+            removedRetentionDays:
+              description: Days support can still recover a detached volume's latest snapshot.
+              type: integer
+paths:
+  /api/cloud/onboarding/:
+    get:
+      operationId: readOnboardingState
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OnboardingState' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/workspace-provisioning:
+    get:
+      operationId: readWorkspaceProvisioning
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkspaceProvisioning' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/cli/device:
+    post:
+      operationId: createDeviceAuthorization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_name: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeviceAuthorization' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/cli/token:
+    post:
+      operationId: exchangeDeviceCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device_code]
+              properties:
+                device_code: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeviceToken' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/projects/:
+    get:
+      operationId: listProjects
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectList' }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      operationId: createProject
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewProject' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreatedProject' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/projects/{projectId}:
+    get:
+      operationId: readProject
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/projects/{projectId}/repository: { $ref: 'environments.yaml#/paths/repository' }
+  /api/cloud/projects/{projectId}/environments: { $ref: 'environments.yaml#/paths/environments' }
+  /api/cloud/projects/{projectId}/environments/{environmentId}: { $ref: 'environments.yaml#/paths/environment' }
+  /api/cloud/projects/{projectId}/environments/{environmentId}/deletion: { $ref: 'environments.yaml#/paths/deletion' }
+  /api/cloud/projects/{projectId}/environments/{environmentId}/promotion: { $ref: 'environments.yaml#/paths/promotion' }
+  /api/cloud/projects/{projectId}/environments/{environmentId}/health: { $ref: 'environments.yaml#/paths/health' }
+  /api/cloud/projects/{projectId}/environments/{environmentId}/services:
+    post:
+      operationId: createService
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: environmentId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewUploadService' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreatedService' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/projects/{projectId}/environments/{environmentId}/variables:
+    $ref: './variables.parts.yaml#/listPath'
+  /api/cloud/projects/{projectId}/environments/{environmentId}/services/{serviceId}/variables/{key}:
+    $ref: './variables.parts.yaml#/itemPath'
+  /api/cloud/projects/{projectId}/environments/{environmentId}/resources:
+    $ref: 'resources.openapi.yaml#/paths/~1api~1cloud~1projects~1{projectId}~1environments~1{environmentId}~1resources'
+  /api/cloud/projects/{projectId}/environments/{environmentId}/resource-plan:
+    $ref: 'resources.openapi.yaml#/paths/~1api~1cloud~1projects~1{projectId}~1environments~1{environmentId}~1resource-plan'
+  /api/cloud/projects/{projectId}/environments/{environmentId}/resource-plan/apply:
+    $ref: 'resources.openapi.yaml#/paths/~1api~1cloud~1projects~1{projectId}~1environments~1{environmentId}~1resource-plan~1apply'
+  /api/cloud/services/{serviceId}/settings:
+    get:
+      operationId: readServiceSettings
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceSettings' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/services/{serviceId}/source-deployments:
+    post:
+      operationId: deploySource
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [source]
+              properties:
+                source:
+                  type: string
+                  format: binary
+                  description: Non-empty source tar archive (.tar) of at most 95 MiB, the upload_bytes ceiling no plan raises. The Cloudflare edge refuses a request body above 100 MB with its own 413 page before the API sees it. No other parts are accepted. Tenant upload quotas also apply.
+            encoding:
+              source:
+                contentType: application/x-tar
+      responses:
+        '202':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeploymentReceipt' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/services/{serviceId}/deployments:
+    get:
+      operationId: deploymentHistory
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeploymentHistory' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/services/{serviceId}/deployments/{revisionId}/rollback:
+    post:
+      operationId: rollbackDeployment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: revisionId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/services/{serviceId}/logs:
+    get:
+      operationId: streamServiceLogs
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: follow
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Server-sent log events
+          content:
+            text/event-stream:
+              schema: { type: string }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/deployments/{deploymentId}:
+    get:
+      operationId: readDeployment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: deploymentId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeploymentDetail' }
+        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/deployments/{deploymentId}/progress:
+    get:
+      operationId: streamDeploymentProgress
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: deploymentId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Server-sent deployment progress events
+          content:
+            text/event-stream:
+              schema: { type: string }
+        default: { $ref: '#/components/responses/Error' }
