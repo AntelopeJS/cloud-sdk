@@ -17,7 +17,12 @@ pnpm add -g @antelopejs/cloud
 ajs-cloud --version
 ```
 
-To run it once without installing: `npx @antelopejs/cloud deploy`.
+To run it without installing, `npx` fetches the latest version on each call:
+
+```sh
+npx @antelopejs/cloud login
+npx @antelopejs/cloud deploy
+```
 
 The binary is `ajs-cloud`. The package also exports a Commander command
 factory, meant to be mounted as `ajs cloud` by `@antelopejs/core`:

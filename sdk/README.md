@@ -3,11 +3,15 @@
 A typed client for the AntelopeJS Cloud API: the client the `ajs-cloud` CLI
 uses, without the CLI. Its only runtime dependency is `openapi-fetch`.
 
-```sh
-npm install @antelopejs/cloud-sdk
-```
+## Install
 
 Node.js 20.19 or later is required.
+
+```sh
+npm install @antelopejs/cloud-sdk
+# or
+pnpm add @antelopejs/cloud-sdk
+```
 
 ## Client
 
