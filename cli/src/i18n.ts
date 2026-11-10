@@ -1,0 +1,192 @@
+export type Language = "en" | "fr";
+export type MessageKey = keyof typeof MESSAGES.en;
+
+const MESSAGES = {
+  en: {
+    userCode: "Code:",
+    columnService: "Service",
+    columnStatus: "Status",
+    columnUrl: "URL",
+    nothingChanged: "Nothing was changed",
+    availableRegions: "Available regions:",
+    rollingBack: "Rolling {service} back to revision {revision}",
+    rolledBack: "Rolled {service} back to revision {revision}",
+    approve: "Approve this login in your browser:",
+    appNameRetry: "Public name taken, trying",
+    ceiling: "Max cost",
+    ceilingUnknown: "shown once the service exists",
+    confirmDeploy: "Deploy?",
+    confirmPlan: "Create and deploy?",
+    created: "Created",
+    existing: "existing",
+    invalidPort: "Use a port between 1 and 65535.",
+    invalidServiceName:
+      "Use lowercase letters, digits and dashes for the service name.",
+    invalidSlug:
+      "Use at least 2 lowercase letters, digits or dashes for the project name.",
+    new: "new",
+    notDeployed: "not deployed",
+    notLinked: "This folder is not linked to a project yet",
+    perMonth: "/month",
+    planEnvironment: "Environment",
+    planProject: "Project",
+    planRegion: "Region",
+    planService: "Service",
+    planSource: "Source",
+    planSourceUpload: "upload of this folder",
+    planTitle: "Deployment plan",
+    promptPort: "Port the app listens on",
+    promptProject: "Project name",
+    promptRegion: "Region",
+    promptService: "Service name",
+    slugTaken: "is already taken in this workspace",
+    slugTakenOwned: "already exists. Deploy to it?",
+    unknownRegion: "Unknown region.",
+    availableServices: "Available services:",
+    noServices: "none yet",
+    deployed: "Deployed",
+    linked: "Project linked",
+    loggedIn: "Logged in",
+    rollbackQuestion: "Roll {service} back to revision {revision}?",
+    waiting: "Waiting for the approval in your browser",
+    loginBusy:
+      "Too many login requests from your network: trying again in {seconds} s",
+    browserUnavailable: "No browser could be opened: open the link above",
+    loginNext: "deploy the app of the current folder",
+    workspace: "Workspace",
+    apiEndpoint: "API",
+    console: "Console",
+    workspaceReady: "ready",
+    loggedOut: "Logged out: the saved session was removed from this machine",
+    alreadyLoggedOut: "You were not logged in",
+    workspacePreparing: "Waiting for your workspace to be prepared",
+    workspaceNowReady: "Workspace ready",
+    deployingNow: "deploying",
+    phaseUploading: "uploading",
+    phaseQueued: "queued",
+    phaseBuilding: "building",
+    phaseChecking: "rolling out",
+    phaseSwitching: "switching traffic",
+    phaseSucceeded: "live",
+    phaseFailed: "failed",
+    phaseCancelled: "cancelled",
+    queuePosition: "position in queue:",
+    stillRunning: "still",
+    detached: "Stopped following: the deployment keeps running on the platform",
+    detachedStatus: "check where it is",
+    detachedLogs: "read the service logs",
+    detachedConsole: "or open",
+    failureReason: "Reason:",
+    platformFailure: "a platform error, not your code: deploy again",
+    logsNotDeployed:
+      "This service has no deployment yet, so it has no logs: run ajs-cloud deploy first",
+    logsEmpty: "No logs in the last hour",
+  },
+  fr: {
+    userCode: "Code :",
+    columnService: "Service",
+    columnStatus: "État",
+    columnUrl: "URL",
+    nothingChanged: "Rien n’a été modifié",
+    availableRegions: "Régions disponibles :",
+    rollingBack: "Retour de {service} à la révision {revision}",
+    rolledBack: "{service} est revenu à la révision {revision}",
+    approve: "Approuvez cette connexion dans votre navigateur :",
+    appNameRetry: "Nom public déjà pris, essai avec",
+    ceiling: "Coût maximal",
+    ceilingUnknown: "affiché une fois le service créé",
+    confirmDeploy: "Déployer ?",
+    confirmPlan: "Créer et déployer ?",
+    created: "Créé",
+    existing: "existant",
+    invalidPort: "Indiquez un port entre 1 et 65535.",
+    invalidServiceName:
+      "Utilisez des minuscules, des chiffres et des tirets pour le nom du service.",
+    invalidSlug:
+      "Utilisez au moins 2 minuscules, chiffres ou tirets pour le nom du projet.",
+    new: "nouveau",
+    notDeployed: "non déployé",
+    notLinked: "Ce dossier n’est encore associé à aucun projet",
+    perMonth: "/mois",
+    planEnvironment: "Environnement",
+    planProject: "Projet",
+    planRegion: "Région",
+    planService: "Service",
+    planSource: "Source",
+    planSourceUpload: "envoi de ce dossier",
+    planTitle: "Plan de déploiement",
+    promptPort: "Port d’écoute de l’app",
+    promptProject: "Nom du projet",
+    promptRegion: "Région",
+    promptService: "Nom du service",
+    slugTaken: "est déjà pris dans cet espace de travail",
+    slugTakenOwned: "existe déjà. Y déployer ?",
+    unknownRegion: "Région inconnue.",
+    availableServices: "Services disponibles :",
+    noServices: "aucun pour l’instant",
+    deployed: "Déployé",
+    linked: "Projet associé",
+    loggedIn: "Connexion réussie",
+    rollbackQuestion: "Revenir à la révision {revision} de {service} ?",
+    waiting: "En attente de l’approbation dans le navigateur",
+    loginBusy:
+      "Trop de demandes de connexion depuis votre réseau : nouvel essai dans {seconds} s",
+    browserUnavailable:
+      "Aucun navigateur n’a pu être ouvert : ouvrez le lien ci-dessus",
+    loginNext: "déployer l’app du dossier courant",
+    workspace: "Espace de travail",
+    apiEndpoint: "API",
+    console: "Console",
+    workspaceReady: "prêt",
+    loggedOut:
+      "Déconnecté : la session enregistrée a été supprimée de cette machine",
+    alreadyLoggedOut: "Vous n’étiez pas connecté",
+    workspacePreparing: "Attente de la préparation de votre espace de travail",
+    workspaceNowReady: "Espace de travail prêt",
+    deployingNow: "déploiement en cours",
+    phaseUploading: "envoi",
+    phaseQueued: "en file d’attente",
+    phaseBuilding: "construction",
+    phaseChecking: "mise en ligne",
+    phaseSwitching: "bascule du trafic",
+    phaseSucceeded: "en ligne",
+    phaseFailed: "échec",
+    phaseCancelled: "annulé",
+    queuePosition: "position dans la file :",
+    stillRunning: "toujours",
+    detached: "Suivi interrompu : le déploiement continue sur la plateforme",
+    detachedStatus: "voir où il en est",
+    detachedLogs: "lire les logs du service",
+    detachedConsole: "ou ouvrez",
+    failureReason: "Raison :",
+    platformFailure: "erreur de la plateforme, pas de votre code : redéployez",
+    logsNotDeployed:
+      "Ce service n’a encore aucun déploiement, donc aucun log : lancez d’abord ajs-cloud deploy",
+    logsEmpty: "Aucun log dans la dernière heure",
+  },
+} as const;
+
+export function language(value?: string): Language {
+  if (value?.toLowerCase().startsWith("fr")) return "fr";
+  return "en";
+}
+
+export function message(key: MessageKey, value?: string): string {
+  return MESSAGES[language(value)][key];
+}
+
+/**
+ * A message with its `{name}` placeholders filled, for sentences whose word
+ * order differs between languages.
+ */
+export function format(
+  key: MessageKey,
+  lang: string | undefined,
+  values: Record<string, string>,
+): string {
+  return message(key, lang).replace(
+    /\{(\w+)\}/g,
+    (placeholder, name: string) =>
+      Object.hasOwn(values, name) ? values[name] : placeholder,
+  );
+}

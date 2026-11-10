@@ -1,0 +1,127 @@
+schemas:
+  VariableOrigin:
+    description: Where a variable's value comes from. `manual` is a variable set by hand on its service. `resource` is wired from a value another service of the environment publishes, such as the `REDIS_URL` of a Redis resource, and follows that value.
+    oneOf:
+      - type: object
+        required: [type]
+        properties:
+          type: { type: string, const: manual }
+      - type: object
+        required: [type, serviceId, publishedKey]
+        properties:
+          type: { type: string, const: resource }
+          serviceId:
+            description: The service that publishes the value.
+            type: string
+          publishedKey:
+            description: The key the publisher publishes the value under.
+            type: string
+  EnvironmentVariable:
+    description: A variable of one service of an environment. Secret values are write-only, so `value` is null whenever `secret` is true, masked or not.
+    type: object
+    required: [serviceId, key, secret, value, origin]
+    properties:
+      serviceId:
+        description: The service the variable is set on.
+        type: string
+      key: { type: string }
+      secret: { type: boolean }
+      value:
+        description: The value in clear; null when the variable is secret, or when a `resource` variable follows a value that is not available.
+        type: [string, "null"]
+      origin: { $ref: '#/schemas/VariableOrigin' }
+  EnvironmentVariableList:
+    type: object
+    required: [variables]
+    properties:
+      variables:
+        type: array
+        items: { $ref: '#/schemas/EnvironmentVariable' }
+  VariableWrite:
+    type: object
+    required: [value]
+    properties:
+      value:
+        description: The new value. It cannot be empty.
+        type: string
+      secret:
+        description: Whether a variable the service does not hold yet is created as a secret, which can never be read back. Defaults to true. A variable the service already holds keeps its kind, and one wired from a resource is refused.
+        type: boolean
+listPath:
+  get:
+    operationId: listVariables
+    description: Lists the variables of every service of the environment, those wired from a resource included. Requires the project's deploy permission. Secret values are never returned.
+    security: [{ bearerAuth: [] }]
+    parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: environmentId
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        content:
+          application/json:
+            schema: { $ref: './cloud.openapi.yaml#/components/schemas/EnvironmentVariableList' }
+      default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+itemPath:
+  put:
+    operationId: setVariable
+    description: Sets a variable of a service of the environment and answers the variable as listed. A key the service does not hold is created, as a secret unless `secret` is false; a held plain or secret variable keeps its kind. A variable wired from a resource is refused. Requires the project's deploy permission.
+    security: [{ bearerAuth: [] }]
+    parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: environmentId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: serviceId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: key
+        required: true
+        schema: { type: string }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: './cloud.openapi.yaml#/components/schemas/VariableWrite' }
+    responses:
+      '200':
+        content:
+          application/json:
+            schema: { $ref: './cloud.openapi.yaml#/components/schemas/EnvironmentVariable' }
+      default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  delete:
+    operationId: deleteVariable
+    description: Removes a variable of a service of the environment, one wired from a resource included. Requires the project's deploy permission.
+    security: [{ bearerAuth: [] }]
+    parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: environmentId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: serviceId
+        required: true
+        schema: { type: string }
+      - in: path
+        name: key
+        required: true
+        schema: { type: string }
+    responses:
+      '200':
+        description: The variable is removed; the answer has no body.
+      default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }

@@ -1,0 +1,19 @@
+{
+  "name": "cloud-sdk-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "checks": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run check:generated && pnpm run test",
+    "lint": "pnpm run sdk && pnpm -r run lint",
+    "format:check": "pnpm -r run format:check",
+    "typecheck": "pnpm -r run typecheck",
+    "check:generated": "pnpm --dir sdk run check:generated",
+    "check:hosts": "node scripts/check-package-hosts.mjs sdk cli && node scripts/check-repository-hosts.mjs",
+    "sdk": "pnpm --dir sdk run build",
+    "test": "pnpm -r --workspace-concurrency=1 run test && node --test scripts/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "packageManager": "pnpm@10.20.0"
+}

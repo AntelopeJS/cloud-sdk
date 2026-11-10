@@ -1,0 +1,341 @@
+components:
+  schemas:
+      EnvironmentList:
+        type: object
+        required: [environments]
+        properties:
+          environments:
+            type: array
+            items: { $ref: '#/components/schemas/EnvironmentDetail' }
+      EnvironmentDetail:
+        description: An environment of a project, the git branch it builds and what it serves.
+        type: object
+        required: [id, name, branch, state, url, isProtected, preview, serving, target, services]
+        properties:
+          id: { type: string }
+          name: { type: string }
+          branch:
+            description: The branch the environment builds. A push to it deploys a durable environment; a preview follows its pull request's head branch, which pull request updates deploy. Null for an environment the CLI deploys.
+            type: [string, "null"]
+          state:
+            description: The status of its services together.
+            type: string
+            enum: [live, build, waiting, sleep, failed, unknown]
+          url:
+            description: The address of its first public service; null when none answers on one.
+            type: [string, "null"]
+            format: uri
+          isProtected:
+            description: A protected environment refuses deletion.
+            type: boolean
+          preview:
+            description: The pull request a preview environment mirrors; null for a durable environment.
+            oneOf:
+              - $ref: '#/components/schemas/EnvironmentPreview'
+              - type: "null"
+          serving:
+            description: The last deployment that went live; null before the first one.
+            oneOf:
+              - $ref: '#/components/schemas/EnvironmentDeployment'
+              - type: "null"
+          target:
+            description: The latest deployment asked of the environment. It differs from serving while it rolls out, or after it failed and serving kept the traffic.
+            oneOf:
+              - $ref: '#/components/schemas/EnvironmentDeployment'
+              - type: "null"
+          services:
+            type: array
+            items: { $ref: '#/components/schemas/EnvironmentService' }
+      EnvironmentPreview:
+        type: object
+        required: [sourceEnvironmentId, repository, pullRequestNumber, headBranch]
+        properties:
+          sourceEnvironmentId: { type: string }
+          repository: { type: string }
+          pullRequestNumber: { type: integer }
+          headBranch: { type: string }
+      EnvironmentDeployment:
+        type: object
+        required: [id, number, status, commit, branch, createdAt]
+        properties:
+          id: { type: string }
+          number: { type: integer }
+          status: { type: string, enum: [queued, building, checking, switching, succeeded, failed, cancelled] }
+          commit:
+            description: The commit it built; null for a CLI upload or a rollback.
+            type: [string, "null"]
+          branch: { type: [string, "null"] }
+          createdAt: { type: string, format: date-time }
+      EnvironmentService:
+        type: object
+        required: [id, name, servingRevisionId, targetRevisionId]
+        properties:
+          id: { type: string }
+          name: { type: string }
+          servingRevisionId:
+            description: The revision serving traffic; null before the first one goes live.
+            type: [string, "null"]
+          targetRevisionId:
+            description: The revision last submitted; it equals servingRevisionId once live.
+            type: [string, "null"]
+      NewEnvironment:
+        type: object
+        required: [name]
+        properties:
+          name:
+            description: Stored as a slug.
+            type: string
+          branch:
+            description: The branch the environment builds; absent for one the CLI deploys.
+            type: [string, "null"]
+          cloneFrom:
+            description: An environment of the same project whose services the new one copies.
+            type: [string, "null"]
+          autoSleep: { type: boolean }
+      CreatedEnvironment:
+        type: object
+        required: [environmentId, name]
+        properties:
+          environmentId: { type: string }
+          name: { type: string }
+      Promotion:
+        description: What to put the environment on, a commit of the project's repository or the tip of one of its branches.
+        oneOf:
+          - type: object
+            additionalProperties: false
+            required: [commit]
+            properties:
+              commit: { type: string, pattern: '^[0-9a-f]{40}$' }
+          - type: object
+            additionalProperties: false
+            required: [branch]
+            properties:
+              branch:
+                description: A valid git branch name; the server refuses any other with 400.
+                type: string
+      PromotionReceipt:
+        type: object
+        required: [deploymentId, commit]
+        properties:
+          deploymentId: { type: string }
+          commit:
+            description: The commit the deployment builds, the branch tip read when the promotion named a branch.
+            type: string
+      ProjectRepository:
+        type: object
+        required: [repository]
+        properties:
+          repository:
+            description: The GitHub repository the project builds from, as owner/name. It is the linked one, else the one most of its services build from; null when neither exists.
+            type: [string, "null"]
+      EnvironmentHealth:
+        type: object
+        required: [environmentId, services]
+        properties:
+          environmentId: { type: string }
+          services:
+            type: array
+            items: { $ref: '#/components/schemas/ServiceHealth' }
+      ServiceHealth:
+        type: object
+        required: [serviceId, name, readinessPath, livenessPath, check, runtime]
+        properties:
+          serviceId: { type: string }
+          name: { type: string }
+          readinessPath:
+            description: The path the service is set to probe for readiness over HTTP; null for a TCP connect. A revision keeps the path it was deployed with, so a change applies at the next deployment.
+            type: [string, "null"]
+          livenessPath:
+            description: The path the service is set to probe for liveness over HTTP, the readiness path when it sets none; null for a TCP connect. A change applies at the next deployment.
+            type: [string, "null"]
+          check:
+            description: The start-up check of the target revision, which gates the traffic switch; null before the first revision.
+            oneOf:
+              - $ref: '#/components/schemas/RevisionCheck'
+              - type: "null"
+          runtime:
+            description: What the platform last reported of the running workload; null when it reported nothing.
+            oneOf:
+              - $ref: '#/components/schemas/RuntimeHealth'
+              - type: "null"
+      RevisionCheck:
+        type: object
+        required: [revisionId, number, state, startedAt, failure]
+        properties:
+          revisionId: { type: string }
+          number: { type: integer }
+          state:
+            description: Preparing and pending revisions are still being checked.
+            type: string
+            enum: [preparing, pending, succeeded, failed]
+          startedAt:
+            description: When the check started; null before it did.
+            type: [string, "null"]
+            format: date-time
+          failure:
+            description: Why the revision never went live; null unless it failed.
+            oneOf:
+              - type: object
+                required: [reason, detail]
+                properties:
+                  reason: { type: string, enum: [image_pull, crash_loop, runtime, scheduling, health_check, no_pod, refused] }
+                  detail: { type: [string, "null"] }
+              - type: "null"
+      RuntimeHealth:
+        type: object
+        required: [phase, message, observedAt]
+        properties:
+          phase: { type: string, enum: [running, starting, pending, sleeping, failed, unknown, unschedulable, image-pull-failed, stalled] }
+          message: { type: [string, "null"] }
+          observedAt: { type: string, format: date-time }
+paths:
+  repository:
+    get:
+      operationId: readProjectRepository
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectRepository' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+    put:
+      operationId: linkProjectRepository
+      description: Links the project to a repository a GitHub installation of the workspace grants; null unlinks it, and the answer falls back to the repository most of its services build from.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectRepository' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectRepository' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  environments:
+    get:
+      operationId: listEnvironments
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnvironmentList' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+    post:
+      operationId: createEnvironment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewEnvironment' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreatedEnvironment' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  environment:
+    get:
+      operationId: readEnvironment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: environmentId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnvironmentDetail' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  deletion:
+    post:
+      operationId: deleteEnvironment
+      description: Deletes the environment, its services and its previews. A protected environment refuses.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: environmentId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Done
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  promotion:
+    post:
+      operationId: promoteEnvironment
+      description: Builds and deploys a commit of the project's repository, or a branch tip, to the environment's services that build from it. The serving revision keeps the traffic until the new one passes its health check.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: environmentId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Promotion' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PromotionReceipt' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  health:
+    get:
+      operationId: readEnvironmentHealth
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: environmentId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnvironmentHealth' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }

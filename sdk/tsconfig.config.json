@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "outDir": "node_modules/.cache/tsconfig-config",
+    "rootDir": "."
+  },
+  "include": ["oxlint.config.ts"]
+}
