@@ -349,6 +349,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Project' }
         default: { $ref: '#/components/responses/Error' }
+  /api/cloud/projects/{projectId}/deployments: { $ref: 'deployments.yaml#/paths/projectDeployments' }
   /api/cloud/projects/{projectId}/repository: { $ref: 'environments.yaml#/paths/repository' }
   /api/cloud/projects/{projectId}/environments: { $ref: 'environments.yaml#/paths/environments' }
   /api/cloud/projects/{projectId}/environments/{environmentId}: { $ref: 'environments.yaml#/paths/environment' }

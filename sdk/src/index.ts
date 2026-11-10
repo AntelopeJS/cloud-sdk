@@ -1,6 +1,6 @@
 export * from "./api-error.js";
 export * from "./api.js";
-export type * from "./deployments.js";
+export * from "./deployments.js";
 export * from "./environments.js";
 export type { components, operations, paths } from "./generated/cloud-api.js";
 export type * from "./resources.js";

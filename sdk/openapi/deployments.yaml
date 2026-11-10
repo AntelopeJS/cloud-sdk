@@ -60,3 +60,82 @@ components:
         durationSeconds:
           description: Null until the build has both started and finished.
           type: [integer, "null"]
+    ProjectDeploymentPage:
+      description: One page of a project's deployments, newest first.
+      type: object
+      required: [deployments, nextCursor]
+      properties:
+        deployments:
+          type: array
+          items: { $ref: '#/components/schemas/ProjectDeployment' }
+        nextCursor:
+          description: Pass it as cursor to read the next, older page; null on the last page.
+          type: [string, "null"]
+    ProjectDeployment:
+      description: One deployment of a project to one of its environments, and the revisions it rolled out.
+      type: object
+      required: [id, number, environmentId, status, commit, branch, createdAt, finishedAt, trigger, revisionIds]
+      properties:
+        id: { type: string }
+        number: { type: integer }
+        environmentId: { type: string }
+        status: { $ref: '#/components/schemas/DeploymentStatus' }
+        commit:
+          description: The commit deployed; null when the trigger carries none, such as a CLI upload.
+          type: [string, "null"]
+        branch:
+          description: The branch the commit came from; null for a CLI upload or a rollback.
+          type: [string, "null"]
+        createdAt: { type: string, format: date-time }
+        finishedAt:
+          description: When it succeeded, failed or was cancelled; null while it runs.
+          type: [string, "null"]
+          format: date-time
+        trigger:
+          description: What started it. push is a push to the environment's branch, promotion a promotion to the environment, upload a CLI source upload.
+          type: string
+          enum: [push, promotion, rollback, upload, restart]
+        revisionIds:
+          description: The service revisions it rolled out; empty until its builds produce them.
+          type: array
+          items: { type: string }
+    DeploymentStatus:
+      description: Sources build, the new revision is health-checked, then traffic switches to it.
+      type: string
+      enum: [queued, building, checking, switching, succeeded, failed, cancelled]
+paths:
+  projectDeployments:
+    get:
+      operationId: listProjectDeployments
+      description: The project's deployments across its environments, newest first, one page at a time.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: environmentId
+          description: Only the deployments to this environment.
+          schema: { type: string }
+        - in: query
+          name: status
+          description: Only the deployments in one of these statuses.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { $ref: '#/components/schemas/DeploymentStatus' }
+        - in: query
+          name: cursor
+          description: The nextCursor of the previous page; absent for the first page.
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectDeploymentPage' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }

@@ -100,6 +100,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cloud/projects/{projectId}/deployments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The project's deployments across its environments, newest first, one page at a time. */
+        get: operations["listProjectDeployments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cloud/projects/{projectId}/repository": {
         parameters: {
             query?: never;
@@ -625,6 +642,42 @@ export interface components {
                 removedRetentionDays: number;
             };
         };
+        /**
+         * @description Sources build, the new revision is health-checked, then traffic switches to it.
+         * @enum {string}
+         */
+        DeploymentStatus: "queued" | "building" | "checking" | "switching" | "succeeded" | "failed" | "cancelled";
+        /** @description One deployment of a project to one of its environments, and the revisions it rolled out. */
+        ProjectDeployment: {
+            id: string;
+            number: number;
+            environmentId: string;
+            status: components["schemas"]["DeploymentStatus"];
+            /** @description The commit deployed; null when the trigger carries none, such as a CLI upload. */
+            commit: string | null;
+            /** @description The branch the commit came from; null for a CLI upload or a rollback. */
+            branch: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When it succeeded, failed or was cancelled; null while it runs.
+             */
+            finishedAt: string | null;
+            /**
+             * @description What started it. push is a push to the environment's branch, promotion a promotion to the environment, upload a CLI source upload.
+             * @enum {string}
+             */
+            trigger: "push" | "promotion" | "rollback" | "upload" | "restart";
+            /** @description The service revisions it rolled out; empty until its builds produce them. */
+            revisionIds: string[];
+        };
+        /** @description One page of a project's deployments, newest first. */
+        ProjectDeploymentPage: {
+            deployments: components["schemas"]["ProjectDeployment"][];
+            /** @description Pass it as cursor to read the next, older page; null on the last page. */
+            nextCursor: string | null;
+        };
         ProjectRepository: {
             /** @description The GitHub repository the project builds from, as owner/name. It is the linked one, else the one most of its services build from; null when neither exists. */
             repository: string | null;
@@ -1083,6 +1136,36 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Project"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listProjectDeployments: {
+        parameters: {
+            query?: {
+                /** @description Only the deployments to this environment. */
+                environmentId?: string;
+                /** @description Only the deployments in one of these statuses. */
+                status?: components["schemas"]["DeploymentStatus"][];
+                /** @description The nextCursor of the previous page; absent for the first page. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDeploymentPage"];
                 };
             };
             default: components["responses"]["Error"];
