@@ -2,7 +2,8 @@
   "git": {
     "commitMessage": "chore(release): @antelopejs/cloud-sdk v${version}",
     "tagName": "cloud-sdk-v${version}",
-    "requireCommits": true
+    "requireCommits": true,
+    "commitsPath": "."
   },
   "github": {
     "release": true,
