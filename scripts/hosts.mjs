@@ -20,6 +20,13 @@ const OWN_DOMAIN = /(?:^|\.)antelopejs\.[a-z]{2,}$/;
 /** Names and RFC 1918 addresses that only resolve inside a private network or cluster. */
 const PRIVATE_NETWORK_HOST =
   /(?:^|\.)(?:internal|local|lan|svc)$|^(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01]))(?:\.\d{1,3}){2,3}$/;
+/**
+ * A cluster name or an RFC 1918 address written without a scheme, such as an
+ * upstream in a config file. A name that continues, as `settings.local.json`
+ * does, is a file, not a host.
+ */
+const PRIVATE_NETWORK_PATTERN =
+  /\b((?:[a-z0-9-]+\.)+(?:svc|cluster\.local|internal)|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2})(?![a-z0-9.-])/gi;
 
 export const STAGING_PATTERN = /staging/i;
 
@@ -43,12 +50,10 @@ export function isPublishableHost(name) {
  * @param {string} name A host, lower-case, without a trailing dot
  */
 export function isPrivateHost(name) {
-  if (isPublishableHost(name)) return false;
-  return (
-    OWN_DOMAIN.test(name) ||
-    STAGING_PATTERN.test(name) ||
-    PRIVATE_NETWORK_HOST.test(name)
-  );
+  if (RESERVED_HOST.test(name)) return false;
+  if (STAGING_PATTERN.test(name) || PRIVATE_NETWORK_HOST.test(name))
+    return true;
+  return OWN_DOMAIN.test(name) && !isPublishableHost(name);
 }
 
 /**
@@ -59,7 +64,12 @@ export function isPrivateHost(name) {
 export function hostsOf(line) {
   const hosts = [...line.matchAll(URL_HOST_PATTERN)].map(([, host]) => host);
   const own = [...line.matchAll(OWN_HOST_PATTERN)].map(([host]) => host);
+  const network = [...line.matchAll(PRIVATE_NETWORK_PATTERN)].map(
+    ([host]) => host,
+  );
   return new Set(
-    [...hosts, ...own].map((host) => host.toLowerCase().replace(/\.+$/, "")),
+    [...hosts, ...own, ...network].map((host) =>
+      host.toLowerCase().replace(/\.+$/, ""),
+    ),
   );
 }

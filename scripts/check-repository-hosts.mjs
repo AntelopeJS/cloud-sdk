@@ -60,13 +60,17 @@ function commitMessageFindings() {
 
 /**
  * Every line a commit of `HEAD` added, read from the diff body only: a header
- * runs from `diff --git` to the first hunk.
+ * runs from `diff --git` to the first hunk. `--text` reads files that a `-diff`
+ * attribute or binary content would hide, and a merge shows the lines its
+ * resolution added beyond the automatic merge.
  * @returns {string[]}
  */
 function addedLineFindings() {
   const log = git([
     "log",
     "-p",
+    "--text",
+    "--diff-merges=remerge",
     "--no-color",
     "--no-ext-diff",
     "--format=commit %H",

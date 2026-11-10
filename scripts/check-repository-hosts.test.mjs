@@ -22,6 +22,9 @@ const REGISTRY = host("registry", "unlisted", "antelopejs", "cloud");
 const STAGED = host("shop-staging", "acme", "dev");
 const CLUSTER = host("db", "cluster", "internal");
 const PRIVATE_ADDRESS = host("10", "0", "3", "17");
+const APP_STAGED = host("api", "staging", "antelopejs", "io");
+const SERVICE = host("cloud-api", "cloud", "svc", "cluster", "local");
+const NODE_ADDRESS = host("10", "0", "12", "7");
 
 /**
  * @param {string} cwd
@@ -127,6 +130,84 @@ describe("check-repository-hosts", () => {
       `${commit}:config.ts: names host ${CLUSTER}`,
       `${commit}:config.ts: names host ${PRIVATE_ADDRESS}`,
     ]);
+  });
+
+  it("fails staging under the app domain, and private hosts written without a scheme", () => {
+    const directory = repository("schemeless", [
+      {
+        files: {
+          "values.yaml": [
+            `apiUrl: https://${APP_STAGED}`,
+            `upstream: ${SERVICE}:8080`,
+            `kubeServer: ${NODE_ADDRESS}:6443`,
+          ].join("\n"),
+        },
+        message: "chore: add the values",
+      },
+    ]);
+    const result = check(directory);
+    const commit = commitOf(directory, "HEAD");
+    assert.equal(result.status, 1);
+    assert.deepEqual(result.stderr.trim().split("\n"), [
+      `values.yaml:1: names host ${APP_STAGED}`,
+      `values.yaml:2: names host ${SERVICE}`,
+      `values.yaml:3: names host ${NODE_ADDRESS}`,
+      `${commit}:values.yaml: names host ${APP_STAGED}`,
+      `${commit}:values.yaml: names host ${SERVICE}`,
+      `${commit}:values.yaml: names host ${NODE_ADDRESS}`,
+    ]);
+  });
+
+  it("fails a host that only a merge resolution added", () => {
+    const directory = repository("merge", [
+      { files: { "a.txt": "a\n" }, message: "chore: base" },
+    ]);
+    git(directory, ["checkout", "--quiet", "-b", "side"]);
+    writeFileSync(path.join(directory, "b.txt"), "b\n");
+    git(directory, ["add", "--all"]);
+    git(directory, ["commit", "--quiet", "--message", "chore: side"]);
+    git(directory, ["checkout", "--quiet", "main"]);
+    writeFileSync(path.join(directory, "c.txt"), "c\n");
+    git(directory, ["add", "--all"]);
+    git(directory, ["commit", "--quiet", "--message", "chore: main"]);
+    git(directory, ["merge", "--quiet", "--no-ff", "--no-commit", "side"]);
+    writeFileSync(
+      path.join(directory, "evil.txt"),
+      `url: https://${UNLISTED}\n`,
+    );
+    git(directory, ["add", "--all"]);
+    git(directory, ["commit", "--quiet", "--message", "Merge side"]);
+    const merge = commitOf(directory, "HEAD");
+    git(directory, ["rm", "--quiet", "evil.txt"]);
+    git(directory, ["commit", "--quiet", "--message", "chore: drop"]);
+    const result = check(directory);
+    assert.equal(result.status, 1);
+    assert.equal(
+      result.stderr.trim(),
+      `${merge}:evil.txt: names host ${UNLISTED}`,
+    );
+  });
+
+  it("reads the history of a file that a -diff attribute hides", () => {
+    const directory = repository("attributes", [
+      {
+        files: {
+          ".gitattributes": "pnpm-lock.yaml -diff\n",
+          "pnpm-lock.yaml": `tarball: https://${REGISTRY}/x/-/x-1.0.0.tgz\n`,
+        },
+        message: "build: lock",
+      },
+      {
+        files: { "pnpm-lock.yaml": "lockfileVersion: '9.0'\n" },
+        message: "build: relock",
+      },
+    ]);
+    const result = check(directory);
+    assert.equal(result.status, 1);
+    assert.equal(
+      result.stderr.trim(),
+      `${commitOf(directory, "HEAD~1")}:pnpm-lock.yaml: names host ${REGISTRY}`,
+    );
   });
 
   it("fails a host a past commit added, though the tree no longer names it", () => {
