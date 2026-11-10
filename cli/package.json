@@ -1,6 +1,6 @@
 {
   "name": "@antelopejs/cloud",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "AntelopeJS Cloud command-line client",
   "keywords": [
     "antelopejs",
