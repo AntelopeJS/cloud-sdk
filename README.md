@@ -91,6 +91,16 @@ CI runs both commands on every pull request and on every push to `main`.
 
 The **Release public npm package** workflow publishes one package per run, from `main` for the `latest` channel or from `next` for the `next` channel. It publishes with npm provenance through the shared `release-npm-public.yml` workflow of `AntelopeJS/.github`.
 
+Each package's changelog starts from that package's last tag. Before the first release, tag the first commit of `main` for both packages and push the tags:
+
+```sh
+git tag cloud-sdk-v0.0.0 "$(git rev-list --max-parents=0 origin/main)"
+git tag cloud-cli-v0.0.0 "$(git rev-list --max-parents=0 origin/main)"
+git push origin cloud-sdk-v0.0.0 cloud-cli-v0.0.0
+```
+
+The workflow fails before it publishes when the package has no tag. A package releases only when a commit since its last tag changed its directory.
+
 The CLI depends on a range of SDK versions, so release in this order:
 
 1. Run the workflow with `package: sdk`. The first SDK release sets `release-version` to `0.1.0`, the first version in the range that the CLI depends on.

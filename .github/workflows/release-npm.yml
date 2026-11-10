@@ -66,6 +66,16 @@ jobs:
           }
           NODE
 
+      - name: Verify the package has a tag its changelog starts from
+        env:
+          PACKAGE_DIRECTORY: ${{ inputs.package }}
+        run: |
+          prefix=$(node -p "require('./$PACKAGE_DIRECTORY/.release-it.json').git.tagName.replace('\${version}', '')")
+          git ls-remote --exit-code --tags origin "refs/tags/${prefix}*" > /dev/null || {
+            echo "No ${prefix}* tag is on origin; tag the first commit of main ${prefix}0.0.0 and push the tag." >&2
+            exit 1
+          }
+
       - name: Verify the SDK range of the CLI resolves on npm
         if: inputs.package == 'cli'
         run: |
