@@ -117,41 +117,8 @@ components:
         deploymentId: { type: string }
         buildId: { type: string }
         status: { type: string, const: queued }
-    ActiveBuild:
-      description: A build of the service still queued or running, and the deployment it belongs to.
-      type: object
-      required: [id, deploymentId, status, queuePosition, createdAt]
-      properties:
-        id: { type: string }
-        deploymentId: { type: string }
-        status: { type: string, enum: [queued, starting, running] }
-        queuePosition: { type: [integer, "null"] }
-        createdAt: { type: string, format: date-time }
-    DeploymentHistory:
-      type: object
-      required: [revisions, desiredRevisionId]
-      properties:
-        activeBuilds:
-          type: array
-          items: { $ref: '#/components/schemas/ActiveBuild' }
-        desiredRevisionId: { type: [string, "null"] }
-        revisions:
-          type: array
-          items:
-            type: object
-            required: [id, number, isDesired, canRollback]
-            properties:
-              id: { type: string }
-              number: { type: integer }
-              isDesired: { type: boolean }
-              canRollback: { type: boolean }
-              state:
-                description: Where the revision is; preparing and pending ones are still rolling out.
-                type: string
-                enum: [preparing, pending, succeeded, failed]
-              deploymentId:
-                description: The deployment that rolls the revision out; null when none of the recent ones links to it.
-                type: [string, "null"]
+    ActiveBuild: { $ref: 'deployments.yaml#/components/schemas/ActiveBuild' }
+    DeploymentHistory: { $ref: 'deployments.yaml#/components/schemas/DeploymentHistory' }
     DeploymentDetail:
       type: object
       required: [id, status, failure]

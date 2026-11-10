@@ -528,19 +528,8 @@ export interface components {
         DeploymentHistory: {
             activeBuilds?: components["schemas"]["ActiveBuild"][];
             desiredRevisionId: string | null;
-            revisions: {
-                id: string;
-                number: number;
-                isDesired: boolean;
-                canRollback: boolean;
-                /**
-                 * @description Where the revision is; preparing and pending ones are still rolling out.
-                 * @enum {string}
-                 */
-                state?: "preparing" | "pending" | "succeeded" | "failed";
-                /** @description The deployment that rolls the revision out; null when none of the recent ones links to it. */
-                deploymentId?: string | null;
-            }[];
+            /** @description The service's revisions, newest first. */
+            revisions: components["schemas"]["RevisionSummary"][];
         };
         DeploymentDetail: {
             id: string;
@@ -890,6 +879,37 @@ export interface components {
             created: components["schemas"]["EnvironmentResource"][];
             /** @description The plan that remains once the databases are created. */
             plan: components["schemas"]["ResourcePlan"];
+        };
+        /** @description What a built revision was built from. */
+        RevisionBuild: {
+            /** @description The branch built; null for a source the CLI uploaded. */
+            branch: string | null;
+            commit: string | null;
+            commitMessage: string | null;
+            /** @description Null until the build has both started and finished. */
+            durationSeconds: number | null;
+        };
+        RevisionSummary: {
+            id: string;
+            number: number;
+            isDesired: boolean;
+            canRollback: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * @description build when Cloud built the revision from source; image when it pulled an image by reference.
+             * @enum {string}
+             */
+            origin: "build" | "image";
+            /** @description The build that produced the revision; null for an image pulled by reference. */
+            build: components["schemas"]["RevisionBuild"] | null;
+            /**
+             * @description Where the revision is; preparing and pending ones are still rolling out.
+             * @enum {string}
+             */
+            state?: "preparing" | "pending" | "succeeded" | "failed";
+            /** @description The deployment that rolls the revision out; null when none of the recent ones links to it. */
+            deploymentId?: string | null;
         };
     };
     responses: {

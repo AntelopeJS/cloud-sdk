@@ -1,0 +1,62 @@
+components:
+  schemas:
+    ActiveBuild:
+      description: A build of the service still queued or running, and the deployment it belongs to.
+      type: object
+      required: [id, deploymentId, status, queuePosition, createdAt]
+      properties:
+        id: { type: string }
+        deploymentId: { type: string }
+        status: { type: string, enum: [queued, starting, running] }
+        queuePosition: { type: [integer, "null"] }
+        createdAt: { type: string, format: date-time }
+    DeploymentHistory:
+      type: object
+      required: [revisions, desiredRevisionId]
+      properties:
+        activeBuilds:
+          type: array
+          items: { $ref: '#/components/schemas/ActiveBuild' }
+        desiredRevisionId: { type: [string, "null"] }
+        revisions:
+          description: The service's revisions, newest first.
+          type: array
+          items: { $ref: '#/components/schemas/RevisionSummary' }
+    RevisionSummary:
+      type: object
+      required: [id, number, isDesired, canRollback, createdAt, origin, build]
+      properties:
+        id: { type: string }
+        number: { type: integer }
+        isDesired: { type: boolean }
+        canRollback: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        origin:
+          description: build when Cloud built the revision from source; image when it pulled an image by reference.
+          type: string
+          enum: [build, image]
+        build:
+          description: The build that produced the revision; null for an image pulled by reference.
+          oneOf:
+            - $ref: '#/components/schemas/RevisionBuild'
+            - type: "null"
+        state:
+          description: Where the revision is; preparing and pending ones are still rolling out.
+          type: string
+          enum: [preparing, pending, succeeded, failed]
+        deploymentId:
+          description: The deployment that rolls the revision out; null when none of the recent ones links to it.
+          type: [string, "null"]
+    RevisionBuild:
+      description: What a built revision was built from.
+      type: object
+      required: [branch, commit, commitMessage, durationSeconds]
+      properties:
+        branch:
+          description: The branch built; null for a source the CLI uploaded.
+          type: [string, "null"]
+        commit: { type: [string, "null"] }
+        commitMessage: { type: [string, "null"] }
+        durationSeconds:
+          description: Null until the build has both started and finished.
+          type: [integer, "null"]
