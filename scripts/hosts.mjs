@@ -17,9 +17,13 @@ const URL_HOST_PATTERN =
 /** A host of ours written without a scheme, such as a constant a URL is built from. */
 const OWN_HOST_PATTERN = /\b((?:[a-z0-9-]+\.)*antelopejs\.[a-z]{2,})\b/gi;
 const OWN_DOMAIN = /(?:^|\.)antelopejs\.[a-z]{2,}$/;
-/** Names and RFC 1918 addresses that only resolve inside a private network or cluster. */
+/**
+ * Names and addresses that only resolve inside a private network or cluster:
+ * cluster and Tailscale names, RFC 1918, shared (RFC 6598) and link-local
+ * IPv4, and unique local IPv6.
+ */
 const PRIVATE_NETWORK_HOST =
-  /(?:^|\.)(?:internal|local|lan|svc)$|^(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01]))(?:\.\d{1,3}){2,3}$/;
+  /(?:^|\.)(?:internal|local|lan|svc|ts\.net)$|^(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01])|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])|169\.254)(?:\.\d{1,3}){2,3}$|^\[f[cd][0-9a-f]{0,2}:/;
 /**
  * A cluster name or an RFC 1918 address written without a scheme, such as an
  * upstream in a config file. A name that continues, as `settings.local.json`

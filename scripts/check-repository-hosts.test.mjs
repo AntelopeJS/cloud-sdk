@@ -25,6 +25,10 @@ const PRIVATE_ADDRESS = host("10", "0", "3", "17");
 const APP_STAGED = host("api", "staging", "antelopejs", "io");
 const SERVICE = host("cloud-api", "cloud", "svc", "cluster", "local");
 const NODE_ADDRESS = host("10", "0", "12", "7");
+const SHARED_ADDRESS = host("100", "64", "1", "2");
+const METADATA_ADDRESS = host("169", "254", "169", "254");
+const UNIQUE_LOCAL = ["[fd00", ":1]"].join(":");
+const TAILNET = host("box", "tailnet-1234", "ts", "net");
 
 /**
  * @param {string} cwd
@@ -155,6 +159,30 @@ describe("check-repository-hosts", () => {
       `${commit}:values.yaml: names host ${APP_STAGED}`,
       `${commit}:values.yaml: names host ${SERVICE}`,
       `${commit}:values.yaml: names host ${NODE_ADDRESS}`,
+    ]);
+  });
+
+  it("fails shared, link-local, unique local and Tailscale addresses", () => {
+    const directory = repository("networks", [
+      {
+        files: {
+          "hosts.txt": [
+            `http://${SHARED_ADDRESS}:8080`,
+            `http://${METADATA_ADDRESS}/latest`,
+            `http://${UNIQUE_LOCAL}:8080`,
+            `https://${TAILNET}`,
+          ].join("\n"),
+        },
+        message: "chore: add the hosts",
+      },
+    ]);
+    const result = check(directory);
+    assert.equal(result.status, 1);
+    assert.deepEqual(result.stderr.trim().split("\n").slice(0, 4), [
+      `hosts.txt:1: names host ${SHARED_ADDRESS}`,
+      `hosts.txt:2: names host ${METADATA_ADDRESS}`,
+      `hosts.txt:3: names host ${UNIQUE_LOCAL}`,
+      `hosts.txt:4: names host ${TAILNET}`,
     ]);
   });
 
