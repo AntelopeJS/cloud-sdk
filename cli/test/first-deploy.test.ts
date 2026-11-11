@@ -270,7 +270,7 @@ describe("first deploy from an unlinked folder", () => {
     await assert.rejects(run(current.runtime, ["deploy"]), (error) => {
       assert.ok(error instanceof CliError);
       assert.equal(error.code, "project_creation_forbidden");
-      assert.match(told(error), /ajs-cloud link/);
+      assert.match(told(error), /ajs cloud link/);
       return true;
     });
     assert.deepEqual(posted(PROJECTS_PATH), []);

@@ -123,10 +123,7 @@ describe("check-repository-hosts", () => {
     ]);
     mkdirSync(path.join(directory, "skills"));
     symlinkSync("../skills", path.join(directory, "skills-link"));
-    symlinkSync(
-      `../${CLUSTER}/notes`,
-      path.join(directory, "private-link"),
-    );
+    symlinkSync(`../${CLUSTER}/notes`, path.join(directory, "private-link"));
     git(directory, ["add", "--all"]);
     git(directory, ["commit", "--quiet", "--message", "chore: link"]);
     const result = check(directory);

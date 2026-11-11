@@ -12,6 +12,7 @@ import { DEFAULT_DEPLOY_TIMEOUT_MINUTES } from "./constants.js";
 import { isRecord, isString } from "./guards.js";
 import { applyCloudHelp, ENVIRONMENT_TOPIC } from "./help.js";
 import { language } from "./i18n.js";
+import { asInvoked } from "./invocation.js";
 import { defaultRuntime } from "./runtime.js";
 import type {
   DeployOptions,
@@ -46,6 +47,25 @@ function packageVersion(): string {
   return manifest.version;
 }
 
+/** Examples with each command written the way the person runs it. */
+function invoked(examples: HelpExample[]): HelpExample[] {
+  return examples.map((example) => ({
+    ...example,
+    command: asInvoked(example.command),
+  }));
+}
+
+function invokedExamples(examples: HelpExample[], width: number): string {
+  return formatExamples(invoked(examples), width);
+}
+
+function withInvokedExamples(
+  command: Command,
+  examples: HelpExample[],
+): ReturnType<typeof withExamples> {
+  return withExamples(command, invoked(examples));
+}
+
 const ROOT_EXAMPLES: HelpExample[] = [
   { description: "Log in once, with your browser", command: "ajs-cloud login" },
   {
@@ -65,11 +85,11 @@ const ROOT_EXAMPLES: HelpExample[] = [
 
 function describeHelpFooter(width: number): string {
   const pointer =
-    `Run ${unbreakable("ajs-cloud <command> --help")} for its options and examples, and ` +
-    `${unbreakable(`ajs-cloud help ${ENVIRONMENT_TOPIC}`)} for the variables read from the environment.`;
+    `Run ${unbreakable(asInvoked("ajs-cloud <command> --help"))} for its options and examples, and ` +
+    `${unbreakable(asInvoked(`ajs-cloud help ${ENVIRONMENT_TOPIC}`))} for the variables read from the environment.`;
   return [
     "",
-    formatExamples(ROOT_EXAMPLES, width),
+    invokedExamples(ROOT_EXAMPLES, width),
     "",
     ...wrapText(pointer, width),
   ].join("\n");
@@ -98,7 +118,7 @@ function loginCommand(runtime: Runtime): Command {
       const options = globals(self);
       await (await actions(options)).login(runtime, options);
     });
-  return withExamples(command, [
+  return withInvokedExamples(command, [
     { description: "Log in to AntelopeJS Cloud", command: "ajs-cloud login" },
     {
       description: "Log in to another endpoint",
@@ -165,7 +185,7 @@ function deployCommand(runtime: Runtime): Command {
         ).deploy(runtime, options, service, deployOptions);
       },
     );
-  return withExamples(command, [
+  return withInvokedExamples(command, [
     {
       description: "Deploy every service of the linked folder",
       command: "ajs-cloud deploy",
@@ -206,7 +226,7 @@ function linkCommand(runtime: Runtime): Command {
         ).link(runtime, options, project, linkOptions);
       },
     );
-  return withExamples(command, [
+  return withInvokedExamples(command, [
     {
       description: "Link a monorepo with two services",
       command:
@@ -261,7 +281,7 @@ function logsCommand(runtime: Runtime): Command {
         ).logs(runtime, options, service, logsOptions);
       },
     );
-  return withExamples(command, [
+  return withInvokedExamples(command, [
     { description: "The last hour of logs", command: "ajs-cloud logs web" },
     { description: "Follow new lines", command: "ajs-cloud logs web -f" },
   ]);
@@ -291,7 +311,7 @@ function rollbackCommand(runtime: Runtime): Command {
         ).rollback(runtime, options, service, revision);
       },
     );
-  return withExamples(command, [
+  return withInvokedExamples(command, [
     {
       description: "Back to the previous revision",
       command: "ajs-cloud rollback web",

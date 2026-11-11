@@ -67,8 +67,8 @@ describe("C5: deploy progress", () => {
       "ℹ web: live · 0s",
       "Deployed web · 0ms",
       "Next steps",
-      "  ajs-cloud status       check where it is",
-      "  ajs-cloud logs web -f  read the service logs",
+      "  ajs cloud status       check where it is",
+      "  ajs cloud logs web -f  read the service logs",
     ]);
     assert.deepEqual(current.streams.stdout, ["https://web.example.test"]);
   });
@@ -189,7 +189,7 @@ describe("C5: deploy progress", () => {
         assert.equal(error.code, "deployment_timeout");
         assert.match(
           told(error),
-          /still running on the platform.*ajs-cloud status/,
+          /still running on the platform.*ajs cloud status/,
         );
         assert.deepEqual(error.details, [
           "web: still queued · 0s",
@@ -215,8 +215,8 @@ describe("C5: deploy progress", () => {
       binary.stderr(),
       /Stopped following: the deployment keeps running on the platform/,
     );
-    assert.match(binary.stderr(), /ajs-cloud status/);
-    assert.match(binary.stderr(), /ajs-cloud logs web -f/);
+    assert.match(binary.stderr(), /ajs cloud status/);
+    assert.match(binary.stderr(), /ajs cloud logs web -f/);
     assert.match(
       binary.stderr(),
       /deployment\?project=project-1&service=service-web&deployment=deployment-1/,
@@ -235,7 +235,7 @@ describe("C5: deploy progress", () => {
       run(current.runtime, ["deploy"]),
       (error: CliError) => {
         assert.equal(error.code, "deployment_failed");
-        assert.match(told(error), /ajs-cloud logs web/);
+        assert.match(told(error), /ajs cloud logs web/);
         assert.equal(
           error.details[0],
           "Reason: cloud.errors.builds.submit_rejected",

@@ -13,6 +13,7 @@ import {
 import { consoleUrl } from "./console-urls.js";
 import { CliError } from "./errors.js";
 import { format, message } from "./i18n.js";
+import { asInvoked } from "./invocation.js";
 import { isNetworkFailure } from "./network.js";
 import { feedback, record, result } from "./output.js";
 import {
@@ -179,7 +180,7 @@ function reportLogin(
     headline: message("loggedIn", options.lang),
     nextSteps: [
       {
-        command: "ajs-cloud deploy",
+        command: asInvoked("ajs-cloud deploy"),
         description: message("loginNext", options.lang),
       },
     ],
@@ -370,7 +371,7 @@ export async function rollback(
     throw new CliError("rollback_revision_unavailable", serviceName);
   const values = { service: serviceName, revision: String(revision.number) };
   const prompter = runtime.prompter({
-    command: `ajs-cloud rollback ${serviceName}`,
+    command: asInvoked(`ajs-cloud rollback ${serviceName}`),
     defaultsFlag: YES_FLAG,
   });
   const isConfirmed = await prompter.confirm({

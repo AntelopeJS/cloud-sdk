@@ -73,7 +73,7 @@ describe("C2: signed out", () => {
       assert.equal(result.status, 1);
       assert.match(
         result.stderr,
-        /^\S+ You are not logged in\n {2}\S+ Run ajs-cloud login, then run the command again\n$/,
+        /^\S+ You are not logged in\n {2}\S+ Run ajs cloud login, then run the command again\n$/,
       );
       assert.equal(result.stdout, "");
       assert.deepEqual(requests, []);
@@ -85,7 +85,7 @@ describe("C2: signed out", () => {
     const result = await runBinary(["status"], current);
     assert.match(
       result.stderr,
-      /not linked to a project\n.*Run ajs-cloud deploy to create one/,
+      /not linked to a project\n.*Run ajs cloud deploy to create one/,
     );
     const json = await runBinary(["--json", "status"], current);
     assert.equal(JSON.parse(json.stderr).error.code, "project_not_linked");
@@ -116,7 +116,7 @@ describe("C3: login polling", () => {
       "workspace-1",
     );
     assert.ok(current.output.includes("✔ Logged in · workspace-1"));
-    assert.ok(current.output.some((line) => line.includes("ajs-cloud deploy")));
+    assert.ok(current.output.some((line) => line.includes("ajs cloud deploy")));
   });
 
   test("N5: names the workspace the session was approved for", async () => {
@@ -273,7 +273,7 @@ describe("C4: workspace not ready", () => {
     await assert.rejects(run(current.runtime, ["deploy"]), (error) => {
       assert.ok(error instanceof CliError);
       assert.equal(error.code, "workspace_not_ready");
-      assert.match(told(error), /Run ajs-cloud deploy again/);
+      assert.match(told(error), /Run ajs cloud deploy again/);
       return true;
     });
     assert.ok(current.clock.now - startedAt >= WORKSPACE_WAIT_MS);

@@ -12,6 +12,7 @@ import { consoleUrl } from "./console-urls.js";
 import { CliError } from "./errors.js";
 import { createFirstDeployment } from "./first-deploy.js";
 import { message } from "./i18n.js";
+import { asInvoked } from "./invocation.js";
 import { record } from "./output.js";
 import { DeployProgress, progressData, TERMINAL_STATUSES } from "./progress.js";
 import {
@@ -92,8 +93,8 @@ function detach(run: DeployRun, followed: Followed): void {
   }
   const lang = run.options.lang;
   const hints: [string, string][] = [
-    ["ajs-cloud status", message("detachedStatus", lang)],
-    [`ajs-cloud logs ${name} -f`, message("detachedLogs", lang)],
+    [asInvoked("ajs-cloud status"), message("detachedStatus", lang)],
+    [asInvoked(`ajs-cloud logs ${name} -f`), message("detachedLogs", lang)],
   ];
   const width =
     Math.max(...hints.map(([command]) => command.length)) + HINT_GAP;
@@ -318,7 +319,7 @@ async function prepare(
   }
   const api = cloudApi(credentials);
   const prompter = runtime.prompter({
-    command: "ajs-cloud deploy",
+    command: asInvoked("ajs-cloud deploy"),
     acceptsDefaults: options.yes === true,
     defaultsFlag: YES_FLAG,
   });
@@ -354,11 +355,11 @@ function succeeded(
     durationMs,
     nextSteps: [
       {
-        command: "ajs-cloud status",
+        command: asInvoked("ajs-cloud status"),
         description: message("detachedStatus", lang),
       },
       {
-        command: `ajs-cloud logs ${first} -f`,
+        command: asInvoked(`ajs-cloud logs ${first} -f`),
         description: message("detachedLogs", lang),
       },
     ],

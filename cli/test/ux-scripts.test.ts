@@ -31,7 +31,7 @@ describe("readable errors", () => {
         title: 'The project has no service named "api"',
         reason: undefined,
         details: undefined,
-        fixes: ["Run ajs-cloud status to list its services"],
+        fixes: ["Run ajs cloud status to list its services"],
         exitCode: undefined,
       },
     );
@@ -58,7 +58,7 @@ describe("readable errors", () => {
       404,
       "cloud.errors.project.unknown_project",
     );
-    assert.match(told(error), /no longer exists.*ajs-cloud link/);
+    assert.match(told(error), /no longer exists.*ajs cloud link/);
   });
 
   test("an unknown API refusal still names its code", () => {
@@ -94,7 +94,7 @@ describe("C9: scripts, pipes and exit codes", () => {
   test("a bare invocation prints the help on stdout and succeeds", async () => {
     const result = await runBinary([]);
     assert.equal(result.status, 0);
-    assert.match(result.stdout, /^ajs-cloud \d+\.\d+\.\d+/);
+    assert.match(result.stdout, /^ajs cloud \d+\.\d+\.\d+/);
     assert.match(result.stdout, /Commands:/);
     assert.equal(result.stderr, "");
   });
@@ -117,7 +117,7 @@ describe("C9: scripts, pipes and exit codes", () => {
     });
     const result = await runBinary(["rollback", "web"], current);
     assert.equal(result.status, 2);
-    assert.match(result.stderr, /ajs-cloud rollback web --yes/);
+    assert.match(result.stderr, /ajs cloud rollback web --yes/);
     assert.ok(!requests.some((request) => request.startsWith("POST ")));
   });
 
@@ -127,7 +127,7 @@ describe("C9: scripts, pipes and exit codes", () => {
     assert.equal(result.status, 2);
     assert.match(
       result.stderr,
-      /ajs-cloud deploy --project <name> --port <port> --yes/,
+      /ajs cloud deploy --project <name> --port <port> --yes/,
     );
     assert.ok(!requests.some((request) => request.startsWith("POST ")));
   });

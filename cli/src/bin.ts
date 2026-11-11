@@ -19,6 +19,7 @@ import {
 } from "./error-messages.js";
 import { isNumber, isRecord, isString } from "./guards.js";
 import { ENVIRONMENT_TOPIC, formatEnvironmentHelp } from "./help.js";
+import { commandName } from "./invocation.js";
 import type { GlobalOptions } from "./types.js";
 
 interface JsonError {
@@ -132,7 +133,7 @@ function exitOnBrokenPipe(): void {
 
 const args = normalizeVerboseArguments(process.argv.slice(2));
 const isJson = optionArguments(args).some((arg) => JSON_FLAGS.includes(arg));
-const program = createCloudCommand().name("ajs-cloud");
+const program = createCloudCommand().name(commandName());
 
 function language(): string | undefined {
   return (

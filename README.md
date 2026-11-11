@@ -3,13 +3,13 @@
 This repository holds the two public npm packages of AntelopeJS Cloud:
 
 - `@antelopejs/cloud-sdk` in [`sdk/`](sdk/README.md) is a typed client for the AntelopeJS Cloud API. Its types are generated from the OpenAPI spec in `sdk/openapi/`, which the package also ships.
-- `@antelopejs/cloud` in [`cli/`](cli/README.md) is the `ajs-cloud` command-line client. It deploys a folder to AntelopeJS Cloud and operates it, through the SDK.
+- `@antelopejs/cloud` in [`cli/`](cli/README.md) is the command-line client, run as `ajs cloud`. It deploys a folder to AntelopeJS Cloud and operates it, through the SDK.
 
 Both need Node.js 20.19 or later.
 
 ## Install
 
-Install the CLI globally to get the `ajs-cloud` command:
+Install the CLI globally to get the `ajs cloud` command, a plugin of the `ajs` command of `@antelopejs/core`:
 
 ```sh
 npm install -g @antelopejs/cloud
@@ -26,10 +26,10 @@ npm install @antelopejs/cloud-sdk
 Log in once, then deploy from the folder of your app:
 
 ```sh
-ajs-cloud login
+ajs cloud login
 cd my-app
-ajs-cloud deploy
-ajs-cloud status
+ajs cloud deploy
+ajs cloud status
 ```
 
 The first `deploy` creates the project and its service, then prints the public URL. The [CLI README](cli/README.md) lists every command and option.
@@ -41,9 +41,9 @@ import { CloudApi, CloudApiError } from "@antelopejs/cloud-sdk";
 
 const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
 try {
-	console.log(await api.listProjects());
+  console.log(await api.listProjects());
 } catch (error) {
-	if (error instanceof CloudApiError) console.error(error.status, error.code);
+  if (error instanceof CloudApiError) console.error(error.status, error.code);
 }
 ```
 
@@ -62,8 +62,8 @@ const api = new CloudApi({ token, baseUrl: "https://api.example.test" });
 To reach it from the CLI, pass `--api-url` or set `ANTELOPE_CLOUD_URL`. The flag wins over the variable. Log in against that API first, because a saved session belongs to the API it was opened on:
 
 ```sh
-ajs-cloud login --api-url https://api.example.test
-ANTELOPE_CLOUD_URL=https://api.example.test ajs-cloud status
+ajs cloud login --api-url https://api.example.test
+ANTELOPE_CLOUD_URL=https://api.example.test ajs cloud status
 ```
 
 A command whose API differs from the one of the saved session stops before any request, with the error code `api_url_mismatch`.
