@@ -92,6 +92,31 @@ describe("endpoint", () => {
   });
 });
 
+describe("projects", () => {
+  test("a project created from a repository sends the repository and the branch it builds", async () => {
+    const created = {
+      projectId: "p-1",
+      slug: "shop",
+      region: "eu",
+      environmentId: "e-1",
+      serviceId: "s-1",
+    };
+    const { sent, send } = recorder(() => json(200, JSON.stringify(created)));
+    const api = new CloudApi({ token: "t", fetch: send });
+    const project = await api.createProject({
+      slug: "shop",
+      repository: "acme/shop",
+      branch: "main",
+    });
+    assert.equal(project.serviceId, "s-1");
+    assert.deepEqual(JSON.parse(sent[0]?.body ?? ""), {
+      slug: "shop",
+      repository: "acme/shop",
+      branch: "main",
+    });
+  });
+});
+
 describe("refusals", () => {
   test("a refusal carries its code and string params", async () => {
     const body = {
@@ -117,6 +142,20 @@ describe("refusals", () => {
       assert.ok(error instanceof CloudApiError);
       assert.equal(error.code, "too_many_requests");
       assert.equal(error.retryAfterS, 17);
+      return true;
+    });
+  });
+
+  test("a refused log stream says how long to wait", async () => {
+    const { send } = recorder(() =>
+      json(429, JSON.stringify("too_many_streams"), { "retry-after": "30" }),
+    );
+    const api = new CloudApi({ token: "t", fetch: send });
+    await assert.rejects(api.logs("s", { follow: true }).next(), (error) => {
+      assert.ok(error instanceof CloudApiError);
+      assert.equal(error.status, 429);
+      assert.equal(error.code, "too_many_streams");
+      assert.equal(error.retryAfterS, 30);
       return true;
     });
   });

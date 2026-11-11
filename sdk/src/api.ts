@@ -1,17 +1,10 @@
 import createClient from "openapi-fetch";
-import { CloudApiError, InvalidApiResponseError } from "./api-error.js";
+import { InvalidApiResponseError } from "./api-error.js";
 import { ProjectDeploymentsApi } from "./deployments.js";
 import { EnvironmentsApi, ProjectRepositoryApi } from "./environments.js";
 import type { components, paths } from "./generated/cloud-api.js";
 import { isRecord, isString } from "./guards.js";
-import {
-  acceptedOf,
-  dataOf,
-  errorCode,
-  errorParams,
-  isApiErrorBody,
-  refusal,
-} from "./result.js";
+import { acceptedOf, dataOf, isApiErrorBody, refusal } from "./result.js";
 import { parseSse, type SseEvent } from "./sse.js";
 
 /** What the API answers to an accepted source upload. */
@@ -345,6 +338,7 @@ export class CloudApi {
       response.status,
       isApiErrorBody(body) ? body : undefined,
       text,
+      retryAfterSeconds(response.headers.get("retry-after")),
     );
   }
 
@@ -374,12 +368,10 @@ export async function createDevice(
     body: { device_name: deviceName },
   });
   if (result.response.status === HTTP_TOO_MANY_REQUESTS) {
-    const body = isApiErrorBody(result.error) ? result.error : undefined;
-    throw new CloudApiError(
+    throw refusal(
       result.response.status,
-      errorCode(body),
+      isApiErrorBody(result.error) ? result.error : undefined,
       undefined,
-      errorParams(body),
       retryAfterSeconds(result.response.headers.get("retry-after")),
     );
   }

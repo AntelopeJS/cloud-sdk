@@ -591,6 +591,10 @@ export interface components {
         NewProject: {
             slug: string;
             region?: string;
+            /** @description `owner/name` the first service builds */
+            repository?: string;
+            /** @description Branch the environment tracks */
+            branch?: string;
         };
         CreatedProject: {
             projectId: string;

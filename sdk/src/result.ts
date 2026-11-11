@@ -42,8 +42,15 @@ export function refusal(
   status: number,
   body: ApiErrorBody | undefined,
   text?: string,
+  retryAfterS?: number,
 ): CloudApiError {
-  return new CloudApiError(status, errorCode(body), text, errorParams(body));
+  return new CloudApiError(
+    status,
+    errorCode(body),
+    text,
+    errorParams(body),
+    retryAfterS,
+  );
 }
 
 function refusalOf(result: ApiResult<unknown>): CloudApiError {
