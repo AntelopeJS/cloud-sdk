@@ -1,17 +1,10 @@
 import createClient from "openapi-fetch";
-import { CloudApiError, InvalidApiResponseError } from "./api-error.js";
+import { InvalidApiResponseError } from "./api-error.js";
 import { ProjectDeploymentsApi } from "./deployments.js";
 import { EnvironmentsApi, ProjectRepositoryApi } from "./environments.js";
 import type { components, paths } from "./generated/cloud-api.js";
 import { isRecord, isString } from "./guards.js";
-import {
-  acceptedOf,
-  dataOf,
-  errorCode,
-  errorParams,
-  isApiErrorBody,
-  refusal,
-} from "./result.js";
+import { acceptedOf, dataOf, isApiErrorBody, refusal } from "./result.js";
 import { parseSse, type SseEvent } from "./sse.js";
 
 /** What the API answers to an accepted source upload. */
@@ -60,7 +53,6 @@ export interface LogRequest {
 
 const SOURCE_MIME_TYPE = "application/x-tar";
 const SOURCE_FILENAME = "source.tar";
-const HTTP_TOO_MANY_REQUESTS = 429;
 
 function isDeploymentReceipt(value: unknown): value is DeploymentReceipt {
   return (
@@ -69,12 +61,6 @@ function isDeploymentReceipt(value: unknown): value is DeploymentReceipt {
     isString(value.buildId) &&
     value.status === "queued"
   );
-}
-
-/** `Retry-After` as delta-seconds; the HTTP-date form, or nothing usable, is no hint. */
-function retryAfterSeconds(header: string | null): number | undefined {
-  if (!header || !/^\d+$/.test(header.trim())) return undefined;
-  return Number(header.trim());
 }
 
 function endpointClient(options: EndpointOptions = {}) {
@@ -341,11 +327,7 @@ export class CloudApi {
     } catch {
       /** The response is already useful as plain text. */
     }
-    throw refusal(
-      response.status,
-      isApiErrorBody(body) ? body : undefined,
-      text,
-    );
+    throw refusal(response, isApiErrorBody(body) ? body : undefined, text);
   }
 
   private async *stream(
@@ -373,16 +355,6 @@ export async function createDevice(
   const result = await endpointClient(options).POST("/api/cloud/cli/device", {
     body: { device_name: deviceName },
   });
-  if (result.response.status === HTTP_TOO_MANY_REQUESTS) {
-    const body = isApiErrorBody(result.error) ? result.error : undefined;
-    throw new CloudApiError(
-      result.response.status,
-      errorCode(body),
-      undefined,
-      errorParams(body),
-      retryAfterSeconds(result.response.headers.get("retry-after")),
-    );
-  }
   return dataOf(result);
 }
 

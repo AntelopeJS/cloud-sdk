@@ -179,9 +179,12 @@ components:
     NewProject:
       type: object
       required: [slug]
+      dependentRequired: { repository: [branch], branch: [repository] }
       properties:
         slug: { type: string }
         region: { type: string }
+        repository: { type: string, description: "`owner/name` the first service builds" }
+        branch: { type: string, description: Branch the environment tracks }
     CreatedProject:
       type: object
       required: [projectId, slug, region, environmentId]
