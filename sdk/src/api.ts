@@ -43,6 +43,15 @@ export interface CloudApiOptions extends EndpointOptions {
   token: string;
 }
 
+/** How a project create is sent. */
+export interface CreateProjectOptions {
+  /**
+   * Identifies this create across retries, 1 to 255 visible ASCII characters.
+   * Scoped to the workspace and to the member who sends it.
+   */
+  idempotencyKey?: string;
+}
+
 /** How a log read is shaped: one bounded page, or a tail from a cursor. */
 export interface LogRequest {
   follow: boolean;
@@ -125,8 +134,19 @@ export class CloudApi {
     return dataOf(result);
   }
 
-  async createProject(body: NewProject) {
-    const result = await this.client.POST("/api/cloud/projects/", { body });
+  /**
+   * Creates a project. A retry by the same member with the same
+   * `idempotencyKey` and the same body answers the project that key created
+   * instead of a second one; the same key with another body is refused with
+   * `cloud.errors.projects.idempotency_key_reused`, and
+   * `cloud.errors.projects.creation_in_progress` asks for a retry with the
+   * same key.
+   */
+  async createProject(body: NewProject, options: CreateProjectOptions = {}) {
+    const result = await this.client.POST("/api/cloud/projects/", {
+      body,
+      params: { header: { "Idempotency-Key": options.idempotencyKey } },
+    });
     return dataOf(result);
   }
 

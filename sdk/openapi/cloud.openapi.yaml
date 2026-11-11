@@ -313,30 +313,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/DeviceToken' }
         default: { $ref: '#/components/responses/Error' }
-  /api/cloud/projects/:
-    get:
-      operationId: listProjects
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ProjectList' }
-        default: { $ref: '#/components/responses/Error' }
-    post:
-      operationId: createProject
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/NewProject' }
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/CreatedProject' }
-        default: { $ref: '#/components/responses/Error' }
+  /api/cloud/projects/: { $ref: 'projects.yaml#/paths/projects' }
   /api/cloud/projects/{projectId}:
     get:
       operationId: readProject
