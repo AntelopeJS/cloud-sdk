@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, utimes, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  symlink,
+  utimes,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, test } from "node:test";
@@ -111,6 +118,49 @@ describe("contracts", () => {
     t.mock.timers.setTime(2_000_000);
     await utimes(join(root, "keep.txt"), 1, 2);
     assert.deepEqual(await createSourceArchive(root), archive);
+  });
+
+  test("refuses a Dockerfile read from the project file that leaves the service folder", async () => {
+    const parent = await mkdtemp(join(tmpdir(), "cloud-dockerfile-escape-"));
+    const root = join(parent, "service");
+    await mkdir(root);
+    await mkdir(join(parent, "outside"));
+    await writeFile(join(root, "index.js"), "");
+    await writeFile(join(parent, "outside", "secret"), "not for upload");
+    await assert.rejects(
+      createSourceArchive(root, "../outside/secret"),
+      /service_path_outside_project/,
+    );
+    const linked = await symlink(
+      join(parent, "outside"),
+      join(root, "linked"),
+      "junction",
+    ).then(
+      () => true,
+      () => false,
+    );
+    if (linked) {
+      await assert.rejects(
+        createSourceArchive(root, "linked/secret"),
+        /service_path_outside_project/,
+      );
+    }
+  });
+
+  test("ends a stream whose frame never ends, before it fills memory", async () => {
+    const chunk = "x".repeat(65_536);
+    let sent = 0;
+    const endless = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        sent += 1;
+        controller.enqueue(new TextEncoder().encode(chunk));
+      },
+    });
+    const read = async (): Promise<void> => {
+      for await (const event of parseSse(new Response(endless))) void event;
+    };
+    await assert.rejects(read(), /invalid_api_response/);
+    assert.ok(sent <= 32, `read ${sent} chunks before stopping`);
   });
 
   test("packs a service's own Dockerfile as the archive's Dockerfile", async () => {
