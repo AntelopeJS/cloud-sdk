@@ -1,11 +1,7 @@
 {
   "pack": "0.5.2",
   "rules": {
-    "antelopejs/require-tsconfig-include": 5,
-    "eslint/max-lines-per-function": 1,
-    "typescript/no-unsafe-argument": 44,
-    "typescript/no-unsafe-assignment": 45,
-    "typescript/no-unsafe-return": 14
+    "eslint/max-lines-per-function": 1
   },
   "oversizeFiles": {}
 }

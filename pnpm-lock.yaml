@@ -18,6 +18,9 @@ importers:
       '@antelopejs/tooling-configs':
         specifier: ^0.5.2
         version: 0.5.2(knip@6.45.1)(oxfmt@0.77.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2006))
+      '@types/node':
+        specifier: ^22.20.5
+        version: 22.20.5
       knip:
         specifier: ^6.34.0
         version: 6.45.1

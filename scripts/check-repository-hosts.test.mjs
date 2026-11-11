@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, describe, it } from "node:test";
@@ -109,6 +115,31 @@ describe("check-repository-hosts", () => {
     const result = check(directory);
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stderr, "");
+  });
+
+  it("reads a tracked symlink as its target, not as the file it points to", () => {
+    const directory = repository("links", [
+      { files: { "README.md": "docs\n" }, message: "docs: add a readme" },
+    ]);
+    mkdirSync(path.join(directory, "skills"));
+    symlinkSync("../skills", path.join(directory, "skills-link"));
+    symlinkSync(
+      `../${CLUSTER}/notes`,
+      path.join(directory, "private-link"),
+    );
+    git(directory, ["add", "--all"]);
+    git(directory, ["commit", "--quiet", "--message", "chore: link"]);
+    const result = check(directory);
+    const commit = commitOf(directory, "HEAD");
+    assert.equal(result.status, 1, result.stderr);
+    assert.equal(
+      result.stderr,
+      [
+        `private-link:1: names host ${CLUSTER}`,
+        `${commit}:private-link: names host ${CLUSTER}`,
+        "",
+      ].join("\n"),
+    );
   });
 
   it("fails a tracked file that names a private host", () => {
