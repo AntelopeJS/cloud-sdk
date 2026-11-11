@@ -81,11 +81,20 @@ export interface paths {
          * @description Creates a project with its production environment and, from a repository, its first service.
          *
          *     A client that may lose the answer sends an `Idempotency-Key` and retries with the same key and
-         *     the same body. The retry answers 200 with the project that key created, as a fresh create
-         *     would: its `projectId`, current `slug` and `region`, and the original `environmentId` and
-         *     `serviceId`. No second project is created. Keys are scoped to the workspace: the same key in
-         *     another workspace is a different key. A create with another key, or none, on a taken slug
-         *     still answers 409 `cloud.errors.projects.slug_taken`.
+         *     the same request: the same `slug`, `region`, `repository` and `branch`. Once the first create
+         *     finished, the retry answers 200 with the project that key created, as a fresh create would:
+         *     its `projectId`, current `slug` and `region`, and the original `environmentId` and
+         *     `serviceId`. No second project is created, and the replay needs no GitHub call and no room
+         *     under the plan's project ceiling.
+         *
+         *     A key belongs to its workspace and to the member who sent it. Another member sending the
+         *     same key and body is not given the project; on its taken slug they get 409
+         *     `cloud.errors.projects.slug_taken`, as does a create with another key, or none.
+         *
+         *     While another create holds the slug, a keyed request answers 409
+         *     `cloud.errors.projects.creation_in_progress`: it may be its own first attempt still running,
+         *     so the client retries with the same key. The same key from the same member with a different
+         *     request answers 422 `cloud.errors.projects.idempotency_key_reused`.
          */
         post: operations["createProject"];
         delete?: never;
@@ -1144,7 +1153,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description `cloud.errors.projects.slug_taken`: another project holds the slug. */
+            /** @description `cloud.errors.projects.slug_taken`: another project holds the slug. `cloud.errors.projects.creation_in_progress`: a keyed request met another create holding the slug; retry with the same key. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1153,7 +1162,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description `cloud.errors.projects.idempotency_key_reused`: the `Idempotency-Key` already created a project from a different request. */
+            /** @description `cloud.errors.projects.idempotency_key_reused`: the same member's `Idempotency-Key` already created a project from a request with a different `slug`, `region`, `repository` or `branch`. */
             422: {
                 headers: {
                     [name: string]: unknown;
