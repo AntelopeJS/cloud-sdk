@@ -29,8 +29,9 @@ factory, meant to be mounted as `ajs cloud` by `@antelopejs/core`:
 
 ```ts
 import { mountCloudCommand } from "@antelopejs/cloud/command";
+import { Command } from "commander";
 
-mountCloudCommand(ajsProgram);
+mountCloudCommand(new Command("ajs"));
 ```
 
 Released versions of core (1.4, 1.5) build the `ajs` command tree statically

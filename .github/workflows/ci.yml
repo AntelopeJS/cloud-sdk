@@ -22,6 +22,7 @@ jobs:
         README.md
         cli/README.md
         sdk/README.md
+      docs-typescript-project: cli/tsconfig.json
       test-job: true
     permissions:
       contents: read

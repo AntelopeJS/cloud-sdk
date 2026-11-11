@@ -20,7 +20,7 @@ import { CloudApi, CloudApiError } from "@antelopejs/cloud-sdk";
 
 const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
 try {
-  const projects = await api.listProjects();
+  console.log(await api.listProjects());
 } catch (error) {
   if (error instanceof CloudApiError) console.error(error.status, error.code);
 }
