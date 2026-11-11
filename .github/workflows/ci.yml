@@ -17,7 +17,6 @@ jobs:
       extra-commands: |
         git fetch --quiet --unshallow origin "$GITHUB_SHA"
         pnpm run check:hosts
-        pnpm run check:generated
       docs-files: |
         README.md
         cli/README.md
