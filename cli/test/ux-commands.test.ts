@@ -74,7 +74,7 @@ describe("C7: help, version and session commands", () => {
     const result = await runBinary(["whoami"], current);
     assert.match(
       result.stderr,
-      /session has expired or was revoked\n(.*\n)*.*Run ajs-cloud login again/,
+      /session has expired or was revoked\n(.*\n)*.*Run ajs cloud login again/,
     );
   });
 

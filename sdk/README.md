@@ -1,6 +1,6 @@
 # `@antelopejs/cloud-sdk`
 
-A typed client for the AntelopeJS Cloud API: the client the `ajs-cloud` CLI
+A typed client for the AntelopeJS Cloud API: the client the `ajs cloud` CLI
 uses, without the CLI. Its only runtime dependency is `openapi-fetch`.
 
 ## Install

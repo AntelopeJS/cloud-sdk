@@ -1,7 +1,7 @@
 # `@antelopejs/cloud` CLI
 
-`ajs-cloud` deploys a folder to AntelopeJS Cloud and operates it: log in once,
-run `ajs-cloud deploy`, and get a public URL.
+`ajs cloud` deploys a folder to AntelopeJS Cloud and operates it: log in once,
+run `ajs cloud deploy`, and get a public URL.
 
 ## Install
 
@@ -14,18 +14,28 @@ npm install -g @antelopejs/cloud
 # or
 pnpm add -g @antelopejs/cloud
 
-ajs-cloud --version
+ajs cloud --version
 ```
 
-To run it without installing, `npx` fetches the latest version on each call:
+`ajs cloud` is a plugin of the `ajs` command of `@antelopejs/core`: `ajs`
+runs the `ajs-cloud` binary this package installs, which it finds in the
+nearest `node_modules/.bin`, then on the `PATH`. A machine without the `ajs`
+command gets it with `npm install -g @antelopejs/core`. The binary can also
+be run by its own name.
+
+To run it without installing, `npx` fetches the latest version on each call.
+Always give npx the scoped package name:
 
 ```sh
 npx @antelopejs/cloud login
 npx @antelopejs/cloud deploy
 ```
 
-The binary is `ajs-cloud`. The package also exports a Commander command
-factory, meant to be mounted as `ajs cloud` by `@antelopejs/core`:
+The hints the CLI prints name the command the way it was run: `ajs cloud …`,
+or `npx @antelopejs/cloud …` when npx runs it.
+
+The package also exports a Commander command factory, for a program that
+mounts the command itself:
 
 ```ts
 import { mountCloudCommand } from "@antelopejs/cloud/command";
@@ -34,17 +44,14 @@ import { Command } from "commander";
 mountCloudCommand(new Command("ajs"));
 ```
 
-Released versions of core (1.4, 1.5) build the `ajs` command tree statically
-and do not mount it yet: use `ajs-cloud` directly.
-
 ## Quick start
 
 ```sh
-ajs-cloud login         # approve the login in your browser
+ajs cloud login         # approve the login in your browser
 cd my-app
-ajs-cloud deploy        # first deploy: creates the project and its service
-ajs-cloud status
-ajs-cloud logs web
+ajs cloud deploy        # first deploy: creates the project and its service
+ajs cloud status
+ajs cloud logs web
 ```
 
 ## Commands
@@ -61,23 +68,23 @@ ajs-cloud logs web
 | `logs <service>` | Prints the service's recent logs (last hour); `-f` follows them |
 | `rollback <service> [revision]` | Rolls a service back to its previous revision, or to the given one |
 
-`ajs-cloud --help` and `ajs-cloud <command> --help` list every option, with
+`ajs cloud --help` and `ajs cloud <command> --help` list every option, with
 examples.
 
 ```sh
-ajs-cloud link my-project --service api=apps/api --service app=apps/app
-ajs-cloud link my-project --service web=. --service frontend=. --dockerfile frontend=frontend.Dockerfile  # two services of one folder
-ajs-cloud deploy        # all services from the project root
-ajs-cloud deploy api    # one named service
-cd apps/app && ajs-cloud deploy # inferred from the configured path
-ajs-cloud logs api -f
-ajs-cloud open [api]
-ajs-cloud rollback api [revision-id]
+ajs cloud link my-project --service api=apps/api --service app=apps/app
+ajs cloud link my-project --service web=. --service frontend=. --dockerfile frontend=frontend.Dockerfile  # two services of one folder
+ajs cloud deploy        # all services from the project root
+ajs cloud deploy api    # one named service
+cd apps/app && ajs cloud deploy # inferred from the configured path
+ajs cloud logs api -f
+ajs cloud open [api]
+ajs cloud rollback api [revision-id]
 ```
 
 ### First deploy
 
-In a folder that is not linked yet, `ajs-cloud deploy` creates what it needs
+In a folder that is not linked yet, `ajs cloud deploy` creates what it needs
 instead of failing:
 
 1. It checks that your workspace can deploy. A new workspace takes about a
@@ -116,7 +123,7 @@ ask on, `deploy` stops before any write with exit code 2 and names the flags
 to pass:
 
 ```sh
-ajs-cloud deploy --yes --project my-app --port 8080
+ajs cloud deploy --yes --project my-app --port 8080
 ```
 
 A project named with `--project` that already exists is deployed to as-is.
@@ -130,7 +137,7 @@ deploys from it use its own link. Leave the folder out of the parent's upload
 with a `.cloudignore`:
 
 ```sh
-cd frontend && ajs-cloud deploy frontend --yes --project my-app --port 3000
+cd frontend && ajs cloud deploy frontend --yes --project my-app --port 3000
 ```
 
 ### Following a deployment
@@ -148,13 +155,13 @@ and ends with the total time and the public URL:
 Deployed web · 1m 31s
 
 Next steps
-  ajs-cloud status       check where it is
-  ajs-cloud logs web -f  read the service logs
+  ajs cloud status       check where it is
+  ajs cloud logs web -f  read the service logs
 https://my-app.antelopejs.io
 ```
 
 The progress and the summary go to stderr; the public URL is the result, on
-stdout, so `URL=$(ajs-cloud deploy -q)` captures it.
+stdout, so `URL=$(ajs cloud deploy -q)` captures it.
 
 A new service's address is `<project>-<service>.antelopejs.io`, without
 repeating what the project name already says: a service named `web`, `app` or
@@ -176,15 +183,15 @@ and a quiet phase is reported every 30 seconds
   (`--timeout <minutes>` to change it). The deployment itself keeps running:
   the command prints its console page and exits with an error.
 - **Ctrl+C** stops the CLI, not the deployment, and exits with code 130. The
-  CLI says so and prints how to follow it: `ajs-cloud status`,
-  `ajs-cloud logs <service> -f`, and the deployment's console page.
+  CLI says so and prints how to follow it: `ajs cloud status`,
+  `ajs cloud logs <service> -f`, and the deployment's console page.
 - `status` shows a deployment still on its way, for example
   `web  deploying (queued, position in queue: 1)` while it builds, or
   `web  deploying (rolling out)` once it is built.
 
 ## Output, languages and errors
 
-`ajs-cloud` follows the output contract of `ajs` and its plugins:
+`ajs cloud` follows the output contract of `ajs` and its plugins:
 
 - **stdout carries results only**: tables (`status`), key/value lines
   (`whoami`), log lines, URLs (`open`, `deploy`), help and `--version`.
@@ -197,7 +204,7 @@ and a quiet phase is reported every 30 seconds
 
   ```
   ✖ You are not logged in
-    → Run ajs-cloud login, then run the command again
+    → Run ajs cloud login, then run the command again
   ```
 
   `--verbose` adds the stack trace of the underlying failure.
@@ -208,7 +215,7 @@ and a quiet phase is reported every 30 seconds
   (`-y`), `--no-browser`, `--lang en|fr`, `--api-url`, `-q`/`--quiet` (results,
   warnings and errors only), `--verbose[=channels]` and `--no-color`. They read
   the same environment as `ajs`: `NO_COLOR`, `FORCE_COLOR`,
-  `ANTELOPEJS_QUIET`, `ANTELOPEJS_VERBOSE` and `CI`. `ajs-cloud help
+  `ANTELOPEJS_QUIET`, `ANTELOPEJS_VERBOSE` and `CI`. `ajs cloud help
   environment` lists them.
 - **Languages**: the messages of the Cloud CLI are in English or French
   (`--lang`, else `LANG`). The texts shared with `ajs` (usage errors, help
@@ -234,7 +241,7 @@ the token itself stays valid until it expires or is revoked.
 `--api-url` takes precedence over `ANTELOPE_CLOUD_URL`. Login uses that endpoint
 and binds the saved session to it. Other commands use the saved endpoint when
 neither is set. If an override differs from the saved endpoint, they stop before
-any API request with `api_url_mismatch`; run `ajs-cloud login --api-url <url>`
+any API request with `api_url_mismatch`; run `ajs cloud login --api-url <url>`
 to authenticate with the intended endpoint first. The CLI never moves the saved
 token to the override endpoint.
 

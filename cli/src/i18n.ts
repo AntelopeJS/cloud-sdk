@@ -1,3 +1,4 @@
+import { asInvoked } from "./invocation.js";
 export type Language = "en" | "fr";
 export type MessageKey = keyof typeof MESSAGES.en;
 
@@ -172,7 +173,7 @@ export function language(value?: string): Language {
 }
 
 export function message(key: MessageKey, value?: string): string {
-  return MESSAGES[language(value)][key];
+  return asInvoked(MESSAGES[language(value)][key]);
 }
 
 /**

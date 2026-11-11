@@ -7,6 +7,7 @@ import {
 import { CliError } from "./errors.js";
 import { isRecord, isString } from "./guards.js";
 import { language } from "./i18n.js";
+import { asInvoked } from "./invocation.js";
 import { isFetchFailure, NETWORK_ERROR, networkCause } from "./network.js";
 import { PROBLEM_TEXTS, type ProblemText } from "./problems.js";
 
@@ -79,8 +80,10 @@ const API_PROBLEMS = new Map<string, string>([
 type ProblemValues = Readonly<Record<string, string>>;
 
 function fill(text: string, values: ProblemValues): string {
-  return text.replace(PLACEHOLDER_PATTERN, (placeholder, name: string) =>
-    Object.hasOwn(values, name) ? values[name] : placeholder,
+  return asInvoked(text).replace(
+    PLACEHOLDER_PATTERN,
+    (placeholder, name: string) =>
+      Object.hasOwn(values, name) ? values[name] : placeholder,
   );
 }
 
