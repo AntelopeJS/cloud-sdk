@@ -1,0 +1,150 @@
+components:
+  schemas:
+    ActiveBuild:
+      description: A build of the service still queued or running, and the deployment it belongs to.
+      type: object
+      required: [id, deploymentId, status, queuePosition, createdAt]
+      properties:
+        id: { type: string }
+        deploymentId: { type: string }
+        status: { type: string, enum: [queued, starting, running] }
+        queuePosition: { type: [integer, "null"] }
+        createdAt: { type: string, format: date-time }
+    DeploymentHistory:
+      type: object
+      required: [revisions, desiredRevisionId]
+      properties:
+        activeBuilds:
+          type: array
+          items: { $ref: '#/components/schemas/ActiveBuild' }
+        desiredRevisionId: { type: [string, "null"] }
+        revisions:
+          description: The service's revisions, newest first.
+          type: array
+          items: { $ref: '#/components/schemas/RevisionSummary' }
+    RevisionSummary:
+      type: object
+      required: [id, number, isDesired, canRollback, createdAt, origin, build]
+      properties:
+        id: { type: string }
+        number: { type: integer }
+        isDesired: { type: boolean }
+        canRollback: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        origin:
+          description: build when Cloud built the revision from source; image when it pulled an image by reference.
+          type: string
+          enum: [build, image]
+        build:
+          description: The build that produced the revision; null for an image pulled by reference.
+          oneOf:
+            - $ref: '#/components/schemas/RevisionBuild'
+            - type: "null"
+        state:
+          description: Where the revision is; preparing and pending ones are still rolling out.
+          type: string
+          enum: [preparing, pending, succeeded, failed]
+        deploymentId:
+          description: The deployment that rolls the revision out; null when none of the recent ones links to it.
+          type: [string, "null"]
+    RevisionBuild:
+      description: What a built revision was built from.
+      type: object
+      required: [branch, commit, commitMessage, durationSeconds]
+      properties:
+        branch:
+          description: The branch built; null for a source the CLI uploaded.
+          type: [string, "null"]
+        commit: { type: [string, "null"] }
+        commitMessage: { type: [string, "null"] }
+        durationSeconds:
+          description: Null until the build has both started and finished.
+          type: [integer, "null"]
+    ProjectDeploymentPage:
+      description: One page of a project's deployments, newest first.
+      type: object
+      required: [deployments, nextCursor]
+      properties:
+        deployments:
+          type: array
+          items: { $ref: '#/components/schemas/ProjectDeployment' }
+        nextCursor:
+          description: Pass it as cursor to read the next, older page; null on the last page.
+          type: [string, "null"]
+    ProjectDeployment:
+      description: One deployment of a project to one of its environments, and the revisions it rolled out.
+      type: object
+      required: [id, number, environmentId, status, commit, branch, createdAt, finishedAt, trigger, revisionIds]
+      properties:
+        id: { type: string }
+        number:
+          description: Counts up within its environment, so two environments of a project can share a number; order by createdAt and key by id.
+          type: integer
+        environmentId: { type: string }
+        status: { $ref: '#/components/schemas/DeploymentStatus' }
+        commit:
+          description: The commit deployed; null when the trigger carries none, such as a CLI upload.
+          type: [string, "null"]
+        branch:
+          description: The branch the commit came from; null for a CLI upload or a rollback.
+          type: [string, "null"]
+        createdAt: { type: string, format: date-time }
+        finishedAt:
+          description: When it succeeded, failed or was cancelled; null while it runs.
+          type: [string, "null"]
+          format: date-time
+        trigger:
+          description: >-
+            What started it.
+            push is a push to the environment's branch, or an update to the pull request a preview environment mirrors.
+            promotion is a commit, branch tip or image someone chose to deploy to the environment.
+            rollback is a return to an earlier revision.
+            upload is a source the CLI uploaded.
+            restart is a redeploy of what the environment already runs, such as after a settings change.
+          type: string
+          enum: [push, promotion, rollback, upload, restart]
+        revisionIds:
+          description: The service revisions it rolled out; empty until its builds produce them.
+          type: array
+          items: { type: string }
+    DeploymentStatus:
+      description: Sources build, the new revision is health-checked, then traffic switches to it.
+      type: string
+      enum: [queued, building, checking, switching, succeeded, failed, cancelled]
+paths:
+  projectDeployments:
+    get:
+      operationId: listProjectDeployments
+      description: The project's deployments across its environments, newest first, one page at a time.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: environmentId
+          description: Only the deployments to this environment.
+          schema: { type: string }
+        - in: query
+          name: status
+          description: Only the deployments in one of these statuses.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { $ref: '#/components/schemas/DeploymentStatus' }
+        - in: query
+          name: cursor
+          description: The nextCursor of the previous page, sent with the same filters; absent for the first page. A cursor the API cannot read is refused.
+          schema: { type: string }
+        - in: query
+          name: limit
+          description: Deployments per page; a value outside 1 to 100 is refused.
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectDeploymentPage' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }

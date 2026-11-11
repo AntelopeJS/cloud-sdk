@@ -1,5 +1,6 @@
 import createClient from "openapi-fetch";
 import { CloudApiError, InvalidApiResponseError } from "./api-error.js";
+import { ProjectDeploymentsApi } from "./deployments.js";
 import { EnvironmentsApi, ProjectRepositoryApi } from "./environments.js";
 import type { components, paths } from "./generated/cloud-api.js";
 import { isRecord, isString } from "./guards.js";
@@ -92,6 +93,8 @@ export class CloudApi {
   readonly environments: EnvironmentsApi;
   /** The GitHub repository a project builds from. */
   readonly projectRepository: ProjectRepositoryApi;
+  /** Every deployment of a project, newest first, one page at a time. */
+  readonly projectDeployments: ProjectDeploymentsApi;
 
   constructor(private readonly options: CloudApiOptions) {
     this.baseUrl = (options.baseUrl ?? DEFAULT_API_URL).replace(/\/+$/, "");
@@ -103,6 +106,7 @@ export class CloudApi {
     });
     this.environments = new EnvironmentsApi(this.client);
     this.projectRepository = new ProjectRepositoryApi(this.client);
+    this.projectDeployments = new ProjectDeploymentsApi(this.client);
   }
 
   async listProjects() {

@@ -100,6 +100,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cloud/projects/{projectId}/deployments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The project's deployments across its environments, newest first, one page at a time. */
+        get: operations["listProjectDeployments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cloud/projects/{projectId}/repository": {
         parameters: {
             query?: never;
@@ -528,19 +545,8 @@ export interface components {
         DeploymentHistory: {
             activeBuilds?: components["schemas"]["ActiveBuild"][];
             desiredRevisionId: string | null;
-            revisions: {
-                id: string;
-                number: number;
-                isDesired: boolean;
-                canRollback: boolean;
-                /**
-                 * @description Where the revision is; preparing and pending ones are still rolling out.
-                 * @enum {string}
-                 */
-                state?: "preparing" | "pending" | "succeeded" | "failed";
-                /** @description The deployment that rolls the revision out; null when none of the recent ones links to it. */
-                deploymentId?: string | null;
-            }[];
+            /** @description The service's revisions, newest first. */
+            revisions: components["schemas"]["RevisionSummary"][];
         };
         DeploymentDetail: {
             id: string;
@@ -635,6 +641,43 @@ export interface components {
                 /** @description Days support can still recover a detached volume's latest snapshot. */
                 removedRetentionDays: number;
             };
+        };
+        /**
+         * @description Sources build, the new revision is health-checked, then traffic switches to it.
+         * @enum {string}
+         */
+        DeploymentStatus: "queued" | "building" | "checking" | "switching" | "succeeded" | "failed" | "cancelled";
+        /** @description One deployment of a project to one of its environments, and the revisions it rolled out. */
+        ProjectDeployment: {
+            id: string;
+            /** @description Counts up within its environment, so two environments of a project can share a number; order by createdAt and key by id. */
+            number: number;
+            environmentId: string;
+            status: components["schemas"]["DeploymentStatus"];
+            /** @description The commit deployed; null when the trigger carries none, such as a CLI upload. */
+            commit: string | null;
+            /** @description The branch the commit came from; null for a CLI upload or a rollback. */
+            branch: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When it succeeded, failed or was cancelled; null while it runs.
+             */
+            finishedAt: string | null;
+            /**
+             * @description What started it. push is a push to the environment's branch, or an update to the pull request a preview environment mirrors. promotion is a commit, branch tip or image someone chose to deploy to the environment. rollback is a return to an earlier revision. upload is a source the CLI uploaded. restart is a redeploy of what the environment already runs, such as after a settings change.
+             * @enum {string}
+             */
+            trigger: "push" | "promotion" | "rollback" | "upload" | "restart";
+            /** @description The service revisions it rolled out; empty until its builds produce them. */
+            revisionIds: string[];
+        };
+        /** @description One page of a project's deployments, newest first. */
+        ProjectDeploymentPage: {
+            deployments: components["schemas"]["ProjectDeployment"][];
+            /** @description Pass it as cursor to read the next, older page; null on the last page. */
+            nextCursor: string | null;
         };
         ProjectRepository: {
             /** @description The GitHub repository the project builds from, as owner/name. It is the linked one, else the one most of its services build from; null when neither exists. */
@@ -891,6 +934,37 @@ export interface components {
             /** @description The plan that remains once the databases are created. */
             plan: components["schemas"]["ResourcePlan"];
         };
+        /** @description What a built revision was built from. */
+        RevisionBuild: {
+            /** @description The branch built; null for a source the CLI uploaded. */
+            branch: string | null;
+            commit: string | null;
+            commitMessage: string | null;
+            /** @description Null until the build has both started and finished. */
+            durationSeconds: number | null;
+        };
+        RevisionSummary: {
+            id: string;
+            number: number;
+            isDesired: boolean;
+            canRollback: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * @description build when Cloud built the revision from source; image when it pulled an image by reference.
+             * @enum {string}
+             */
+            origin: "build" | "image";
+            /** @description The build that produced the revision; null for an image pulled by reference. */
+            build: components["schemas"]["RevisionBuild"] | null;
+            /**
+             * @description Where the revision is; preparing and pending ones are still rolling out.
+             * @enum {string}
+             */
+            state?: "preparing" | "pending" | "succeeded" | "failed";
+            /** @description The deployment that rolls the revision out; null when none of the recent ones links to it. */
+            deploymentId?: string | null;
+        };
     };
     responses: {
         /** @description Stable API error */
@@ -1063,6 +1137,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Project"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listProjectDeployments: {
+        parameters: {
+            query?: {
+                /** @description Only the deployments to this environment. */
+                environmentId?: string;
+                /** @description Only the deployments in one of these statuses. */
+                status?: components["schemas"]["DeploymentStatus"][];
+                /** @description The nextCursor of the previous page, sent with the same filters; absent for the first page. A cursor the API cannot read is refused. */
+                cursor?: string;
+                /** @description Deployments per page; a value outside 1 to 100 is refused. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDeploymentPage"];
                 };
             };
             default: components["responses"]["Error"];
