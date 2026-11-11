@@ -29,8 +29,9 @@ factory, meant to be mounted as `ajs cloud` by `@antelopejs/core`:
 
 ```ts
 import { mountCloudCommand } from "@antelopejs/cloud/command";
+import { Command } from "commander";
 
-mountCloudCommand(ajsProgram);
+mountCloudCommand(new Command("ajs"));
 ```
 
 Released versions of core (1.4, 1.5) build the `ajs` command tree statically
@@ -265,3 +266,14 @@ range the CLI depends on is on npm.
 
 `pnpm pack` shows what would be published: `dist/` (without source maps), this
 README and `package.json`.
+
+## Compatibility
+
+<!-- antelopejs-docs-compat:start -->
+
+| Package                 | Supported     | Tested with |
+| ----------------------- | ------------- | ----------- |
+| `@antelopejs/cloud-sdk` | `^0.1.0`      | `workspace` |
+| `@antelopejs/core`      | `>=1.21.0 <2` | `1.21.2`    |
+
+<!-- antelopejs-docs-compat:end -->

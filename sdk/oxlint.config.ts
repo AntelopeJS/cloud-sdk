@@ -47,7 +47,6 @@ const BIOME_ERRORS = {
 export default defineConfig({
   extends: [antelopePreset()],
   ignorePatterns: [...ANTELOPE_IGNORE_PATTERNS, ...GENERATED_PATTERNS],
-  options: { typeAware: true, maxWarnings: 0 },
   rules: {
     ...BIOME_ERRORS,
     "eslint/no-console": "error",

@@ -184,9 +184,7 @@ export function format(
   lang: string | undefined,
   values: Record<string, string>,
 ): string {
-  return message(key, lang).replace(
-    /\{(\w+)\}/g,
-    (placeholder, name: string) =>
-      Object.hasOwn(values, name) ? values[name] : placeholder,
+  return message(key, lang).replace(/\{(\w+)\}/g, (placeholder, name: string) =>
+    Object.hasOwn(values, name) ? values[name] : placeholder,
   );
 }

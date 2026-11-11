@@ -3,14 +3,33 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "checks": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run check:generated && pnpm run test",
-    "lint": "pnpm run sdk && pnpm -r run lint",
+    "checks": "antelopejs-checks",
+    "lint": "pnpm -r run lint",
     "format:check": "pnpm -r run format:check",
     "typecheck": "pnpm -r run typecheck",
     "check:generated": "pnpm --dir sdk run check:generated",
     "check:hosts": "node scripts/check-package-hosts.mjs sdk cli && node scripts/check-repository-hosts.mjs",
     "sdk": "pnpm --dir sdk run build",
-    "test": "pnpm -r --workspace-concurrency=1 run test && node --test scripts/*.test.mjs"
+    "test": "pnpm -r --workspace-concurrency=1 run test && node --test scripts/*.test.mjs",
+    "prepare": "if [ -e .git ] && command -v git >/dev/null 2>&1 && command -v lefthook >/dev/null 2>&1 && GIT_DIR=.git GIT_WORK_TREE=. git rev-parse --git-dir >/dev/null 2>&1; then GIT_DIR=.git GIT_WORK_TREE=. lefthook install; fi",
+    "size": "antelopejs-check-size",
+    "ratchet": "antelopejs-ratchet",
+    "suppressions": "antelopejs-suppressions",
+    "sync": "antelopejs-sync",
+    "ratchet:update": "antelopejs-ratchet --update",
+    "suppressions:update": "antelopejs-suppressions --update",
+    "sync:check": "antelopejs-sync --check",
+    "format": "oxfmt .",
+    "knip": "knip"
+  },
+  "devDependencies": {
+    "@antelopejs/tooling-configs": "^0.5.2",
+    "@types/node": "^22.20.5",
+    "knip": "^6.34.0",
+    "lefthook": "^2.2.2",
+    "oxfmt": "^0.77.0",
+    "oxlint": "1.81.0",
+    "oxlint-tsgolint": "^7.0.2001"
   },
   "engines": {
     "node": ">=20.19"

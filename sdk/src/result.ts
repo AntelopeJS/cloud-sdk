@@ -22,13 +22,13 @@ export function isApiErrorBody(value: unknown): value is ApiErrorBody {
   return isString(value) || isRecord(value);
 }
 
-export function errorCode(body: ApiErrorBody | undefined): string {
+function errorCode(body: ApiErrorBody | undefined): string {
   if (isString(body)) return body;
   return [body?.code, body?.error, body?.message].find(isString) ?? "api_error";
 }
 
 /** The string values a `{ message, params }` refusal interpolates. */
-export function errorParams(body: ApiErrorBody | undefined): ApiErrorParams {
+function errorParams(body: ApiErrorBody | undefined): ApiErrorParams {
   const params = isString(body) ? undefined : body?.params;
   if (!isObject(params)) return {};
   return Object.fromEntries(

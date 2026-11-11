@@ -12,7 +12,7 @@
  * Prints failures only. Usage: node scripts/check-repository-hosts.mjs
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { lstatSync, readFileSync, readlinkSync } from "node:fs";
 import { hostsOf, isPrivateHost } from "./hosts.mjs";
 
 const MAX_BUFFER = 1 << 30;
@@ -40,7 +40,9 @@ function trackedFileFindings() {
     .split("\0")
     .filter(Boolean)
     .flatMap((path) => {
-      const text = readFileSync(path, "utf8");
+      const text = lstatSync(path).isSymbolicLink()
+        ? readlinkSync(path)
+        : readFileSync(path, "utf8");
       if (text.includes("\0")) return [];
       return text
         .split("\n")

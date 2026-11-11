@@ -41,7 +41,7 @@ import { CloudApi, CloudApiError } from "@antelopejs/cloud-sdk";
 
 const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
 try {
-	const projects = await api.listProjects();
+	console.log(await api.listProjects());
 } catch (error) {
 	if (error instanceof CloudApiError) console.error(error.status, error.code);
 }
@@ -55,7 +55,7 @@ Both packages talk to the production API, `https://api.antelopejs.cloud`, by def
 
 To reach another deployment of the API from the SDK, pass its origin as `baseUrl`:
 
-```ts
+```ts fragment
 const api = new CloudApi({ token, baseUrl: "https://api.example.test" });
 ```
 
