@@ -27,6 +27,10 @@ jobs:
   validate:
     name: Validate package release metadata
     runs-on: ubuntu-latest
+    # Reads the repository only: the write and OIDC grants of the workflow
+    # belong to the publishing job.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

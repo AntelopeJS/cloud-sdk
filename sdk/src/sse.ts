@@ -1,3 +1,5 @@
+import { InvalidApiResponseError } from "./api-error.js";
+
 export interface SseEvent {
   event: string;
   data: unknown;
@@ -26,6 +28,17 @@ function fieldValue(value: string): string {
   return value.startsWith(" ") ? value.slice(1) : value;
 }
 
+/**
+ * The most text one frame may hold before its end. A stream that never ends
+ * a frame would otherwise grow the buffer for as long as it is read.
+ */
+const MAX_FRAME_LENGTH = 1_048_576;
+
+/**
+ * Reads the events of a server-sent stream.
+ *
+ * @throws InvalidApiResponseError when one frame passes 1 MiB without ending.
+ */
 export async function* parseSse(response: Response): AsyncGenerator<SseEvent> {
   if (!response.body) return;
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -35,6 +48,10 @@ export async function* parseSse(response: Response): AsyncGenerator<SseEvent> {
     buffer += value ?? "";
     const frames = buffer.split(/\r?\n\r?\n/);
     buffer = frames.pop() ?? "";
+    if (buffer.length > MAX_FRAME_LENGTH) {
+      await reader.cancel();
+      throw new InvalidApiResponseError();
+    }
     for (const frame of frames) {
       const event = eventOf(frame.split(/\r?\n/));
       if (event) yield event;
