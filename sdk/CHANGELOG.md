@@ -1,6 +1,29 @@
 # Changelog
 
 
+## v0.1.3
+
+[compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.2...v0.1.3)
+
+### 🚀 Enhancements
+
+- **cli:** Name the command `ajs cloud` in hints, help and docs ([#7](https://github.com/AntelopeJS/cloud-sdk/pull/7))
+- **sdk:** Send an Idempotency-Key with a project create ([#9](https://github.com/AntelopeJS/cloud-sdk/pull/9))
+
+### 🩹 Fixes
+
+- **cli:** Keep a service's Dockerfile inside its folder, and bound the SSE frame buffer ([#6](https://github.com/AntelopeJS/cloud-sdk/pull/6))
+- **checks:** Run check:generated from checks:prepare ([#8](https://github.com/AntelopeJS/cloud-sdk/pull/8))
+
+### 🏡 Chore
+
+- Onboard the AntelopeJS guardrail pack with antelopejs-sync --init ([#5](https://github.com/AntelopeJS/cloud-sdk/pull/5))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+- Dada-sudo <damir@altab.be>
+
 ## v0.1.2
 
 [compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.1...v0.1.2)
