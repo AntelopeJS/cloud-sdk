@@ -146,6 +146,19 @@ describe("refusals", () => {
     });
   });
 
+  test("a rate-limited typed call says how long to wait", async () => {
+    const { send } = recorder(() =>
+      json(429, JSON.stringify("too_many_requests"), { "retry-after": "12" }),
+    );
+    const api = new CloudApi({ token: "t", fetch: send });
+    await assert.rejects(api.createProject({ slug: "shop" }), (error) => {
+      assert.ok(error instanceof CloudApiError);
+      assert.equal(error.code, "too_many_requests");
+      assert.equal(error.retryAfterS, 12);
+      return true;
+    });
+  });
+
   test("a refused log stream says how long to wait", async () => {
     const { send } = recorder(() =>
       json(429, JSON.stringify("too_many_streams"), { "retry-after": "30" }),

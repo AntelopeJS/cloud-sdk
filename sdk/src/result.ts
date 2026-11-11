@@ -38,24 +38,30 @@ export function errorParams(body: ApiErrorBody | undefined): ApiErrorParams {
   );
 }
 
+/** `Retry-After` as delta-seconds; the HTTP-date form, or nothing usable, is no hint. */
+function retryAfterSeconds(header: string | null): number | undefined {
+  if (!header || !/^\d+$/.test(header.trim())) return undefined;
+  return Number(header.trim());
+}
+
+/** The refusal a response carries, with the wait its `Retry-After` asks for. */
 export function refusal(
-  status: number,
+  response: Response,
   body: ApiErrorBody | undefined,
   text?: string,
-  retryAfterS?: number,
 ): CloudApiError {
   return new CloudApiError(
-    status,
+    response.status,
     errorCode(body),
     text,
     errorParams(body),
-    retryAfterS,
+    retryAfterSeconds(response.headers.get("retry-after")),
   );
 }
 
 function refusalOf(result: ApiResult<unknown>): CloudApiError {
   return refusal(
-    result.response.status,
+    result.response,
     isApiErrorBody(result.error) ? result.error : undefined,
   );
 }

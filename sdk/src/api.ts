@@ -53,7 +53,6 @@ export interface LogRequest {
 
 const SOURCE_MIME_TYPE = "application/x-tar";
 const SOURCE_FILENAME = "source.tar";
-const HTTP_TOO_MANY_REQUESTS = 429;
 
 function isDeploymentReceipt(value: unknown): value is DeploymentReceipt {
   return (
@@ -62,12 +61,6 @@ function isDeploymentReceipt(value: unknown): value is DeploymentReceipt {
     isString(value.buildId) &&
     value.status === "queued"
   );
-}
-
-/** `Retry-After` as delta-seconds; the HTTP-date form, or nothing usable, is no hint. */
-function retryAfterSeconds(header: string | null): number | undefined {
-  if (!header || !/^\d+$/.test(header.trim())) return undefined;
-  return Number(header.trim());
 }
 
 function endpointClient(options: EndpointOptions = {}) {
@@ -334,12 +327,7 @@ export class CloudApi {
     } catch {
       /** The response is already useful as plain text. */
     }
-    throw refusal(
-      response.status,
-      isApiErrorBody(body) ? body : undefined,
-      text,
-      retryAfterSeconds(response.headers.get("retry-after")),
-    );
+    throw refusal(response, isApiErrorBody(body) ? body : undefined, text);
   }
 
   private async *stream(
@@ -367,14 +355,6 @@ export async function createDevice(
   const result = await endpointClient(options).POST("/api/cloud/cli/device", {
     body: { device_name: deviceName },
   });
-  if (result.response.status === HTTP_TOO_MANY_REQUESTS) {
-    throw refusal(
-      result.response.status,
-      isApiErrorBody(result.error) ? result.error : undefined,
-      undefined,
-      retryAfterSeconds(result.response.headers.get("retry-after")),
-    );
-  }
   return dataOf(result);
 }
 
