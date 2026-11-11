@@ -1,8 +1,9 @@
-import { lstat, readdir, readFile } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { lstat, readdir, readFile, realpath } from "node:fs/promises";
+import { isAbsolute, join, relative, sep } from "node:path";
 import { buffer } from "node:stream/consumers";
 import ignore from "ignore";
 import { pack } from "tar-stream";
+import { CliError } from "./errors.js";
 
 const DEFAULT_IGNORES = [".git", "node_modules", ".antelope"];
 const DEFAULT_IGNORE_SET = new Set(DEFAULT_IGNORES);
@@ -50,6 +51,29 @@ function tarName(path: string): string {
 const DOCKERFILE = "Dockerfile";
 
 /**
+ * The Dockerfile a service names, once it is known to be a file of the
+ * service folder. `link` checks the path it is given, but `deploy` reads it
+ * back from `.antelope/cloud.json`, a committed file anyone who can change
+ * the repository can edit: without this check a path such as
+ * `../../.ssh/id_ed25519`, or one through a symlinked folder, would pack a
+ * file of the deployer's machine into the upload.
+ *
+ * @throws CliError `service_path_outside_project` when the path leaves the folder.
+ */
+async function containedDockerfile(
+  root: string,
+  dockerfile: string,
+): Promise<string> {
+  const path = join(root, dockerfile);
+  const [folder, target] = await Promise.all([realpath(root), realpath(path)]);
+  const inside = relative(folder, target);
+  if (inside === "" || inside.startsWith("..") || isAbsolute(inside)) {
+    throw new CliError("service_path_outside_project", dockerfile);
+  }
+  return path;
+}
+
+/**
  * The service folder as a tar archive. With `dockerfile`, that file is packed
  * as the archive's `Dockerfile`, in place of the folder's own.
  */
@@ -57,6 +81,9 @@ export async function createSourceArchive(
   root: string,
   dockerfile?: string,
 ): Promise<Buffer> {
+  const suppliedDockerfile = dockerfile
+    ? await containedDockerfile(root, dockerfile)
+    : undefined;
   const filter = ignore().add(await ignoreRules(root));
   const listed = await filesUnder(root, filter);
   const files = dockerfile
@@ -65,10 +92,10 @@ export async function createSourceArchive(
   const archive = pack();
   const complete = buffer(archive);
   for (const file of files) {
-    const path = join(
-      root,
-      dockerfile && file === DOCKERFILE ? dockerfile : file,
-    );
+    const path =
+      suppliedDockerfile && file === DOCKERFILE
+        ? suppliedDockerfile
+        : join(root, file);
     const stats = await lstat(path);
     if (!stats.isFile()) continue;
     archive.entry(
