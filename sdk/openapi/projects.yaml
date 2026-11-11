@@ -1,0 +1,56 @@
+paths:
+  projects:
+    get:
+      operationId: listProjects
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/ProjectList' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+    post:
+      operationId: createProject
+      description: |
+        Creates a project with its production environment and, from a repository, its first service.
+
+        A client that may lose the answer sends an `Idempotency-Key` and retries with the same key and
+        the same body. The retry answers 200 with the project that key created, as a fresh create
+        would: its `projectId`, current `slug` and `region`, and the original `environmentId` and
+        `serviceId`. No second project is created. Keys are scoped to the workspace: the same key in
+        another workspace is a different key. A create with another key, or none, on a taken slug
+        still answers 409 `cloud.errors.projects.slug_taken`.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          description: Identifies one create across retries. 1 to 255 visible ASCII characters.
+          schema: { type: string, minLength: 1, maxLength: 255, pattern: '^[\x21-\x7E]+$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: './cloud.openapi.yaml#/components/schemas/NewProject' }
+      responses:
+        '200':
+          description: The project created, or the one this `Idempotency-Key` already created.
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/CreatedProject' }
+        '400':
+          description: '`cloud.errors.projects.invalid_idempotency_key`: the `Idempotency-Key` is empty, longer than 255 characters, or holds a character outside 0x21-0x7E.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '409':
+          description: '`cloud.errors.projects.slug_taken`: another project holds the slug.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '422':
+          description: '`cloud.errors.projects.idempotency_key_reused`: the `Idempotency-Key` already created a project from a different request.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }

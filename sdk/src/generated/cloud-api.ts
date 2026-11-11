@@ -77,6 +77,16 @@ export interface paths {
         };
         get: operations["listProjects"];
         put?: never;
+        /**
+         * @description Creates a project with its production environment and, from a repository, its first service.
+         *
+         *     A client that may lose the answer sends an `Idempotency-Key` and retries with the same key and
+         *     the same body. The retry answers 200 with the project that key created, as a fresh create
+         *     would: its `projectId`, current `slug` and `region`, and the original `environmentId` and
+         *     `serviceId`. No second project is created. Keys are scoped to the workspace: the same key in
+         *     another workspace is a different key. A create with another key, or none, on a taken slug
+         *     still answers 409 `cloud.errors.projects.slug_taken`.
+         */
         post: operations["createProject"];
         delete?: never;
         options?: never;
@@ -1103,7 +1113,10 @@ export interface operations {
     createProject: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Identifies one create across retries. 1 to 255 visible ASCII characters. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1113,12 +1126,40 @@ export interface operations {
             };
         };
         responses: {
+            /** @description The project created, or the one this `Idempotency-Key` already created. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["CreatedProject"];
+                };
+            };
+            /** @description `cloud.errors.projects.invalid_idempotency_key`: the `Idempotency-Key` is empty, longer than 255 characters, or holds a character outside 0x21-0x7E. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.projects.slug_taken`: another project holds the slug. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.projects.idempotency_key_reused`: the `Idempotency-Key` already created a project from a different request. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
             default: components["responses"]["Error"];

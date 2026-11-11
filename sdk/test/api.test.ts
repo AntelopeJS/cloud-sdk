@@ -13,6 +13,7 @@ interface Sent {
   url: string;
   method: string;
   authorization: string | null;
+  idempotencyKey: string | null;
   body: string;
 }
 
@@ -25,6 +26,7 @@ function recorder(answer: () => Response) {
       url: request.url,
       method: request.method,
       authorization: request.headers.get("authorization"),
+      idempotencyKey: request.headers.get("idempotency-key"),
       body: await request.text(),
     });
     return answer();
@@ -114,6 +116,28 @@ describe("projects", () => {
       repository: "acme/shop",
       branch: "main",
     });
+  });
+
+  test("a create sends its idempotency key as the Idempotency-Key header, and no header without one", async () => {
+    const created = {
+      projectId: "p-1",
+      slug: "shop",
+      region: "eu",
+      environmentId: "e-1",
+      serviceId: null,
+    };
+    const { sent, send } = recorder(() => json(200, JSON.stringify(created)));
+    const api = new CloudApi({ token: "t", fetch: send });
+    await api.createProject(
+      { slug: "shop" },
+      { idempotencyKey: "setup-2f6c1e0a" },
+    );
+    await api.createProject({ slug: "shop" });
+    assert.deepEqual(
+      sent.map((request) => request.idempotencyKey),
+      ["setup-2f6c1e0a", null],
+    );
+    assert.deepEqual(JSON.parse(sent[0]?.body ?? ""), { slug: "shop" });
   });
 });
 
