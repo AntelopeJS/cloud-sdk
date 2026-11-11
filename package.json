@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "checks": "antelopejs-checks",
+    "checks:prepare": "pnpm run check:generated",
     "lint": "pnpm -r run lint",
     "format:check": "pnpm -r run format:check",
     "typecheck": "pnpm -r run typecheck",
