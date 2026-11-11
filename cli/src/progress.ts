@@ -9,7 +9,7 @@ const MINUTE_S = 60;
 /** Without a terminal, how often a quiet phase is said to be still running. */
 export const HEARTBEAT_INTERVAL_MS = 30_000;
 /** How often the elapsed time of the running task is refreshed. */
-export const LABEL_INTERVAL_MS = 1_000;
+const LABEL_INTERVAL_MS = 1_000;
 
 /** Deployment statuses, and build phases, as the user reads them. */
 const PHASE_LABELS = new Map<string, MessageKey>([

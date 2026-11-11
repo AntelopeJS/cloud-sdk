@@ -10,7 +10,7 @@ import { withTask } from "./tasks.js";
 import type { GlobalOptions, Runtime } from "./types.js";
 
 /** How often a workspace being prepared is asked again. */
-export const WORKSPACE_POLL_INTERVAL_MS = 5_000;
+const WORKSPACE_POLL_INTERVAL_MS = 5_000;
 /**
  * How long a deploy waits for a new workspace. Provisioning takes about a
  * minute; past a few, something needs a person rather than a longer wait.

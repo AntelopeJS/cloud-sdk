@@ -265,3 +265,14 @@ range the CLI depends on is on npm.
 
 `pnpm pack` shows what would be published: `dist/` (without source maps), this
 README and `package.json`.
+
+## Compatibility
+
+<!-- antelopejs-docs-compat:start -->
+
+| Package                 | Supported     | Tested with |
+| ----------------------- | ------------- | ----------- |
+| `@antelopejs/cloud-sdk` | `^0.1.0`      | `workspace` |
+| `@antelopejs/core`      | `>=1.21.0 <2` | `1.21.2`    |
+
+<!-- antelopejs-docs-compat:end -->
