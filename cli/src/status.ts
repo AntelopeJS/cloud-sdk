@@ -17,7 +17,7 @@ interface InFlightDeployment {
 }
 
 /** One row of `status`. */
-interface ServiceStatus {
+export interface ServiceStatus {
   name: string;
   status: string;
   url: string | null;
