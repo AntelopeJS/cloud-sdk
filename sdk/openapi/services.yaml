@@ -1,0 +1,76 @@
+paths:
+  port:
+    put:
+      operationId: setServicePort
+      description: |
+        Sets the port the service's container listens on, or clears it with null. A service a
+        project creation builds from a repository starts without one, and cannot be deployed
+        until it has one: a deployment asked before fails with `cloud.errors.builds.missing_port`.
+
+        The running revision keeps the port it was deployed with; the next deployment takes the
+        new one.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [port]
+              properties:
+                port:
+                  description: The port the container listens on; null for a service that listens on none.
+                  type: [integer, "null"]
+                  minimum: 1024
+                  maximum: 65535
+      responses:
+        '200':
+          description: Done
+        '400':
+          description: '`cloud.errors.settings.invalid_port`: the port is not an integer from 1024 to 65535.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '409':
+          description: '`cloud.errors.settings.public_needs_port`: a public service cannot lose its port. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  network:
+    put:
+      operationId: setServiceExposure
+      description: |
+        Opens the service to the internet on its own address, or closes it. A service is created
+        closed. Sending the exposure it already has changes nothing.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isPublic]
+              properties:
+                isPublic:
+                  description: Whether the internet reaches the service on its own address.
+                  type: boolean
+      responses:
+        '200':
+          description: Done
+        '409':
+          description: '`cloud.errors.settings.public_needs_port`: a service without a port cannot be opened. `cloud.errors.settings.subdomain_taken`: another service holds its address. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }

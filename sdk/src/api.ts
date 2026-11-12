@@ -265,6 +265,36 @@ export class CloudApi {
     return dataOf(result);
   }
 
+  /**
+   * Sets the port the service's container listens on, from 1024 to 65535, or
+   * clears it with null. A service created from a repository has none, and is
+   * refused its deployments until it has one. The running revision keeps its
+   * port; the next deployment takes the new one.
+   */
+  async setServicePort(serviceId: string, port: number | null): Promise<void> {
+    const result = await this.client.PUT(
+      "/api/cloud/services/{serviceId}/port",
+      { params: { path: { serviceId } }, body: { port }, parseAs: "text" },
+    );
+    acceptedOf(result);
+  }
+
+  /**
+   * Opens the service to the internet on its own address, or closes it. A
+   * service without a port is refused with
+   * `cloud.errors.settings.public_needs_port`.
+   */
+  async setServiceExposure(
+    serviceId: string,
+    isPublic: boolean,
+  ): Promise<void> {
+    const result = await this.client.PUT(
+      "/api/cloud/services/{serviceId}/network",
+      { params: { path: { serviceId } }, body: { isPublic }, parseAs: "text" },
+    );
+    acceptedOf(result);
+  }
+
   async deploymentHistory(serviceId: string) {
     const result = await this.client.GET(
       "/api/cloud/services/{serviceId}/deployments",
