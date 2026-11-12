@@ -21,7 +21,14 @@ export type EnvironmentVariable = components["schemas"]["EnvironmentVariable"];
 export type EnvironmentVariableList =
   components["schemas"]["EnvironmentVariableList"];
 export type NewProject = components["schemas"]["NewProject"];
-export type NewUploadService = components["schemas"]["NewUploadService"];
+/** A service to create: one each `ajs cloud deploy` uploads, or one built from a repository. */
+export type NewService = components["schemas"]["NewService"];
+/** A service whose deployments each carry their own uploaded source. */
+export type NewUploadService = NewService & { source: { type: "upload" } };
+/** A service AntelopeJS Cloud builds from a repository at each push. */
+export type NewRepositoryService = NewService & {
+  source: { type: "repository" };
+};
 export type VariableOrigin = components["schemas"]["VariableOrigin"];
 export type VariableWrite = components["schemas"]["VariableWrite"];
 export type WorkspaceProvisioning =
@@ -151,10 +158,17 @@ export class CloudApi {
     return dataOf(result);
   }
 
+  /**
+   * Creates a service in an environment. With a `repository` source it builds
+   * that repository at each push to the environment's branch, with the
+   * Dockerfile its `dockerfilePath` names when it has one: that is how a
+   * second service, such as a dashboard built by `frontend.Dockerfile`, is
+   * built from the repository of the first.
+   */
   async createService(
     projectId: string,
     environmentId: string,
-    body: NewUploadService,
+    body: NewService,
   ) {
     const result = await this.client.POST(
       "/api/cloud/projects/{projectId}/environments/{environmentId}/services",
@@ -292,6 +306,24 @@ export class CloudApi {
     const result = await this.client.PUT(
       "/api/cloud/services/{serviceId}/network",
       { params: { path: { serviceId } }, body: { isPublic }, parseAs: "text" },
+    );
+    acceptedOf(result);
+  }
+
+  /**
+   * Names the Dockerfile, inside its repository, that builds the service, or
+   * goes back to the root `Dockerfile` or a recipe with `null`. The next
+   * build reads it. A path that is not a plain relative path is refused with
+   * `cloud.errors.settings.invalid_dockerfile_path`, a service that builds no
+   * repository with `cloud.errors.settings.not_a_repository_source`.
+   */
+  async setServiceDockerfile(
+    serviceId: string,
+    path: string | null,
+  ): Promise<void> {
+    const result = await this.client.PUT(
+      "/api/cloud/services/{serviceId}/source-dockerfile",
+      { params: { path: { serviceId } }, body: { path }, parseAs: "text" },
     );
     acceptedOf(result);
   }

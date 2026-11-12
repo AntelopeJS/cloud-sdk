@@ -1,3 +1,55 @@
+schemas:
+  NewService:
+    description: |
+      A service to create in an environment. Its source says where its deployments come
+      from: an upload each `ajs cloud deploy` carries, or a repository AntelopeJS Cloud
+      builds at each push.
+    type: object
+    required: [name, appName, source]
+    properties:
+      name: { type: string }
+      appName: { type: string }
+      source:
+        oneOf:
+          - $ref: '#/schemas/UploadSource'
+          - $ref: '#/schemas/RepositorySource'
+      port: { type: [integer, "null"] }
+      isPublic: { type: boolean }
+  UploadSource:
+    type: object
+    required: [type]
+    properties:
+      type: { type: string, const: upload }
+  RepositorySource:
+    description: |
+      A GitHub repository the workspace's GitHub installation grants. Two services of one
+      repository differ by their Dockerfile: an API built by the AntelopeJS recipe next to
+      a dashboard built by `frontend.Dockerfile`.
+    type: object
+    required: [type, repository]
+    properties:
+      type: { type: string, const: repository }
+      repository: { type: string, description: "The repository, as `owner/name`." }
+      branch:
+        description: The branch this service builds; null or absent follows its environment's branch.
+        type: [string, "null"]
+      dockerfilePath: { $ref: '#/schemas/DockerfilePath' }
+  DockerfilePath:
+    description: |
+      Path, inside the repository, of the Dockerfile that builds the service, such as
+      `frontend.Dockerfile` or `apps/web/Dockerfile`: plain segments of letters, digits,
+      `.`, `_` and `-`, separated by `/`. Null or absent: the root `Dockerfile` when the
+      repository has one, else a recipe.
+    type: [string, "null"]
+    maxLength: 255
+  ServiceSettingsSource:
+    description: Where the service's deployments come from.
+    type: object
+    required: [type]
+    properties:
+      type: { type: string, enum: [repository, image, upload, database] }
+      repository: { type: [string, "null"], description: "`owner/name`, for a repository source." }
+      dockerfilePath: { $ref: '#/schemas/DockerfilePath' }
 paths:
   port:
     put:
@@ -120,6 +172,43 @@ paths:
           description: Done
         '409':
           description: '`cloud.errors.settings.public_needs_port`: a service without a port cannot be opened. `cloud.errors.settings.subdomain_taken`: another service holds its address. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  sourceDockerfile:
+    put:
+      operationId: setServiceDockerfile
+      description: |
+        Names the Dockerfile, inside its repository, that builds the service, or goes back
+        to the root `Dockerfile` or a recipe with null. The next build reads it; the
+        revisions already built keep their image. A build of a commit that holds no file at
+        that path fails with `cloud.errors.builds.dockerfile_not_found`.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [path]
+              properties:
+                path: { $ref: '#/schemas/DockerfilePath' }
+      responses:
+        '200':
+          description: Done
+        '400':
+          description: '`cloud.errors.settings.invalid_dockerfile_path`: not a plain relative path inside the repository.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '409':
+          description: '`cloud.errors.settings.not_a_repository_source`: the service does not build a repository. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
           content:
             application/json:
               schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
