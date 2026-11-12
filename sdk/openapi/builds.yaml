@@ -1,0 +1,54 @@
+paths:
+  logs:
+    get:
+      operationId: streamBuildLogs
+      description: |
+        The output of one build as server-sent events, for a member who may observe the
+        build's project. Same contract as a service's logs.
+
+        Each line is a `log` event: its data is `{ at, level, message, instance }` and its id
+        is the cursor to resume from. Without `follow` the read is a tail: the newest lines,
+        oldest first, then an `end` event. A read from the start opens with one line naming
+        how the build runs (`Build recipe: ...`), which has no cursor and does not count
+        towards `limit`. An `error` event carrying a `code` ends a stream the platform could
+        not serve.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: buildId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: follow
+          description: Keeps the stream open and delivers the lines the build writes next.
+          schema: { type: boolean }
+        - in: query
+          name: limit
+          description: The most lines the read returns before it ends. A tail holds 500 at most.
+          schema: { type: integer, minimum: 1 }
+        - in: header
+          name: Last-Event-ID
+          description: The id of the last event received. The read resumes after it, oldest first.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Server-sent log events
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400':
+          description: A parameter the API cannot read, such as a `limit` that is not a positive integer.
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '404':
+          description: '`cloud.errors.builds.not_found`: no such build, a build of another workspace or of a project the member may not observe, or one whose service was removed.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '429':
+          description: The member or the workspace already holds every live follow it may open. `Retry-After` says how long to wait. A read without `follow` is never refused this way.
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }

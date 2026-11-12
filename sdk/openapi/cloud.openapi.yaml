@@ -474,6 +474,7 @@ paths:
             text/event-stream:
               schema: { type: string }
         default: { $ref: '#/components/responses/Error' }
+  /api/cloud/builds/{buildId}/logs: { $ref: 'builds.yaml#/paths/logs' }
   /api/cloud/deployments/{deploymentId}:
     get:
       operationId: readDeployment

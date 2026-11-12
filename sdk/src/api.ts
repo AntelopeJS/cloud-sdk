@@ -4,6 +4,7 @@ import { ProjectDeploymentsApi } from "./deployments.js";
 import { EnvironmentsApi, ProjectRepositoryApi } from "./environments.js";
 import type { components, paths } from "./generated/cloud-api.js";
 import { isRecord, isString } from "./guards.js";
+import { type BuildLogRequest, type LogRequest, logReadOf } from "./logs.js";
 import { acceptedOf, dataOf, isApiErrorBody, refusal } from "./result.js";
 import { parseSse, type SseEvent } from "./sse.js";
 
@@ -58,14 +59,6 @@ export interface PublishedValue {
   serviceId: string;
   /** The key it publishes the value under. */
   publishedKey: string;
-}
-
-/** How a log read is shaped: one bounded page, or a tail from a cursor. */
-export interface LogRequest {
-  follow: boolean;
-  lastEventId?: string;
-  /** Called once the API accepted the read, before its first frame. */
-  onOpen?: () => void;
 }
 
 const SOURCE_MIME_TYPE = "application/x-tar";
@@ -383,14 +376,30 @@ export class CloudApi {
   }
 
   logs(serviceId: string, request: LogRequest): AsyncGenerator<SseEvent> {
-    const accept = { Accept: "text/event-stream" };
-    const headers = request.lastEventId
-      ? { ...accept, "Last-Event-ID": request.lastEventId }
-      : accept;
-    const query = request.follow ? "?follow=true" : "";
+    const { follow, lastEventId } = request;
+    const read = logReadOf({ follow, lastEventId });
     return this.stream(
-      `/api/cloud/services/${encodeURIComponent(serviceId)}/logs${query}`,
-      headers,
+      `/api/cloud/services/${encodeURIComponent(serviceId)}/logs${read.query}`,
+      read.headers,
+      undefined,
+      request.onOpen,
+    );
+  }
+
+  /**
+   * The output of one build, as the `log` events of its stream, then `end`.
+   * Without `follow` it is the newest lines, oldest first. A build that is
+   * unknown, of another workspace, or whose service was removed answers 404
+   * `cloud.errors.builds.not_found`.
+   */
+  buildLogs(
+    buildId: string,
+    request: BuildLogRequest,
+  ): AsyncGenerator<SseEvent> {
+    const read = logReadOf(request);
+    return this.stream(
+      `/api/cloud/builds/${encodeURIComponent(buildId)}/logs${read.query}`,
+      read.headers,
       undefined,
       request.onOpen,
     );
