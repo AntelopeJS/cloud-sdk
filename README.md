@@ -4,7 +4,7 @@
 
 # AntelopeJS Cloud SDK and CLI
 
-<a href="https://www.npmjs.com/package/@antelopejs/cloud-sdk"><img data-illustration alt="npm @antelopejs/cloud-sdk" src="https://img.shields.io/npm/v/@antelopejs/cloud-sdk?label=cloud-sdk&style=for-the-badge&labelColor=000000&color=000000"></a> <a href="https://www.npmjs.com/package/@antelopejs/cloud"><img data-illustration alt="npm @antelopejs/cloud" src="https://img.shields.io/npm/v/@antelopejs/cloud?label=cloud&style=for-the-badge&labelColor=000000&color=000000"></a> <a href="#license"><img data-illustration alt="License" src="https://img.shields.io/npm/l/@antelopejs/cloud-sdk?style=for-the-badge&labelColor=000000&color=000000"></a> <a href="https://discord.gg/g4pFt6eXqu"><img data-illustration alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a> <a href="./cli/README.md"><img data-illustration alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a> <a href="https://github.com/AntelopeJS/antelopejs"><img data-illustration alt="Star AntelopeJS" src="https://img.shields.io/github/stars/AntelopeJS/antelopejs?label=Star%20AntelopeJS&style=for-the-badge&labelColor=000000&color=000000&logo=github"></a>
+<a href="https://www.npmjs.com/package/@antelopejs/cloud-sdk"><img data-illustration alt="npm @antelopejs/cloud-sdk" src="https://img.shields.io/npm/v/@antelopejs/cloud-sdk?label=cloud-sdk&style=for-the-badge&labelColor=000000&color=000000"></a> <a href="https://www.npmjs.com/package/@antelopejs/cloud"><img data-illustration alt="npm @antelopejs/cloud" src="https://img.shields.io/npm/v/@antelopejs/cloud?label=cloud&style=for-the-badge&labelColor=000000&color=000000"></a> <a href="./LICENSE"><img data-illustration alt="License" src="https://img.shields.io/npm/l/@antelopejs/cloud-sdk?style=for-the-badge&labelColor=000000&color=000000"></a> <a href="https://discord.gg/g4pFt6eXqu"><img data-illustration alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a> <a href="./cli/README.md"><img data-illustration alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a> <a href="https://github.com/AntelopeJS/antelopejs"><img data-illustration alt="Star AntelopeJS" src="https://img.shields.io/github/stars/AntelopeJS/antelopejs?label=Star%20AntelopeJS&style=for-the-badge&labelColor=000000&color=000000&logo=github"></a>
 
 **Antelope Cloud SDK (@antelopejs/cloud-sdk) and CLI (@antelopejs/cloud)**
 
@@ -127,4 +127,4 @@ This tooling belongs to [AntelopeJS](https://github.com/AntelopeJS/antelopejs), 
 
 ## License
 
-Both packages are licensed under Apache-2.0, as declared in [`sdk/package.json`](./sdk/package.json) and [`cli/package.json`](./cli/package.json).
+Both packages are licensed under [Apache-2.0](./LICENSE).
