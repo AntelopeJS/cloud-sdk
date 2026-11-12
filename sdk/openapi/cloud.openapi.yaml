@@ -385,6 +385,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ServiceSettings' }
         default: { $ref: '#/components/responses/Error' }
+  /api/cloud/services/{serviceId}/port: { $ref: 'services.yaml#/paths/port' }
+  /api/cloud/services/{serviceId}/network: { $ref: 'services.yaml#/paths/network' }
+  /api/cloud/services/{serviceId}/variables/references: { $ref: 'services.yaml#/paths/variableReferences' }
   /api/cloud/services/{serviceId}/source-deployments:
     post:
       operationId: deploySource

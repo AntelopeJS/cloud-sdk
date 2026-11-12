@@ -356,6 +356,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cloud/services/{serviceId}/port": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Sets the port the service's container listens on, or clears it with null. A service a
+         *     project creation builds from a repository starts without one, and cannot be deployed
+         *     until it has one: a deployment asked before fails with `cloud.errors.builds.missing_port`.
+         *
+         *     The running revision keeps the port it was deployed with; the next deployment takes the
+         *     new one.
+         */
+        put: operations["setServicePort"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cloud/services/{serviceId}/network": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Opens the service to the internet on its own address, or closes it. A service is created
+         *     closed. Sending the exposure it already has changes nothing.
+         */
+        put: operations["setServiceExposure"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cloud/services/{serviceId}/variables/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Adds a variable to the service that follows a value another service of the same
+         *     environment publishes, such as the `MONGO_URL` of a MongoDB resource: the variable takes
+         *     the published value, and takes the new one when it changes. Listed afterwards with a
+         *     `resource` origin. The value itself is never sent to the client.
+         */
+        post: operations["followPublishedValue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cloud/services/{serviceId}/source-deployments": {
         parameters: {
             query?: never;
@@ -1615,6 +1681,148 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceSettings"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setServicePort: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The port the container listens on; null for a service that listens on none. */
+                    port: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cloud.errors.settings.invalid_port`: the port is not an integer from 1024 to 65535. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.public_needs_port`: a public service cannot lose its port. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setServiceExposure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Whether the internet reaches the service on its own address. */
+                    isPublic: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cloud.errors.settings.public_needs_port`: a service without a port cannot be opened. `cloud.errors.settings.subdomain_taken`: another service holds its address. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    followPublishedValue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The name of the variable on the service. */
+                    key: string;
+                    /** @description The service that publishes the value. */
+                    serviceId: string;
+                    /** @description The key the publisher publishes the value under. */
+                    publishedKey: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cloud.errors.settings.invalid_key`: the name is not a valid variable name. `cloud.errors.settings.self_reference`: a service cannot follow its own value. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.unknown_publisher`: the environment has no such service. `cloud.errors.settings.key_not_published`: the publisher publishes no such key. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.duplicate_key`: the service already holds a variable of that name. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
             default: components["responses"]["Error"];

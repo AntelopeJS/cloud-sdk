@@ -52,6 +52,14 @@ export interface CreateProjectOptions {
   idempotencyKey?: string;
 }
 
+/** A value a service publishes to the other services of its environment. */
+export interface PublishedValue {
+  /** The service that publishes the value. */
+  serviceId: string;
+  /** The key it publishes the value under. */
+  publishedKey: string;
+}
+
 /** How a log read is shaped: one bounded page, or a tail from a cursor. */
 export interface LogRequest {
   follow: boolean;
@@ -263,6 +271,62 @@ export class CloudApi {
       { params: { path: { serviceId } } },
     );
     return dataOf(result);
+  }
+
+  /**
+   * Sets the port the service's container listens on, from 1024 to 65535, or
+   * clears it with null. A service created from a repository has none, and is
+   * refused its deployments until it has one. The running revision keeps its
+   * port; the next deployment takes the new one.
+   */
+  async setServicePort(serviceId: string, port: number | null): Promise<void> {
+    const result = await this.client.PUT(
+      "/api/cloud/services/{serviceId}/port",
+      { params: { path: { serviceId } }, body: { port }, parseAs: "text" },
+    );
+    acceptedOf(result);
+  }
+
+  /**
+   * Opens the service to the internet on its own address, or closes it. A
+   * service without a port is refused with
+   * `cloud.errors.settings.public_needs_port`.
+   */
+  async setServiceExposure(
+    serviceId: string,
+    isPublic: boolean,
+  ): Promise<void> {
+    const result = await this.client.PUT(
+      "/api/cloud/services/{serviceId}/network",
+      { params: { path: { serviceId } }, body: { isPublic }, parseAs: "text" },
+    );
+    acceptedOf(result);
+  }
+
+  /**
+   * Adds a variable to the service that follows a value another service of
+   * its environment publishes, such as the `MONGO_URL` of a MongoDB resource.
+   * The value never reaches the client; the variable is then listed with a
+   * `resource` origin.
+   *
+   * @param serviceId The service that gets the variable
+   * @param key The variable's name on that service
+   * @param published The publishing service and the key it publishes
+   */
+  async followPublishedValue(
+    serviceId: string,
+    key: string,
+    published: PublishedValue,
+  ): Promise<void> {
+    const result = await this.client.POST(
+      "/api/cloud/services/{serviceId}/variables/references",
+      {
+        params: { path: { serviceId } },
+        body: { key, ...published },
+        parseAs: "text",
+      },
+    );
+    acceptedOf(result);
   }
 
   async deploymentHistory(serviceId: string) {
