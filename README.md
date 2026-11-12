@@ -1,4 +1,16 @@
+<a href="https://github.com/AntelopeJS/antelopejs"><img data-illustration src="./.github/readme/strip.svg" width="100%" alt="TOOLING · CLOUD SDK: part of AntelopeJS, hexagonal architecture beyond your own code. A glowing button reads Star AntelopeJS."></a>
+
+<div align="center">
+
 # AntelopeJS Cloud SDK and CLI
+
+<a href="https://www.npmjs.com/package/@antelopejs/cloud-sdk"><img data-illustration alt="npm @antelopejs/cloud-sdk" src="https://img.shields.io/npm/v/@antelopejs/cloud-sdk?label=cloud-sdk&style=for-the-badge&labelColor=000000&color=000000"></a> <a href="https://www.npmjs.com/package/@antelopejs/cloud"><img data-illustration alt="npm @antelopejs/cloud" src="https://img.shields.io/npm/v/@antelopejs/cloud?label=cloud&style=for-the-badge&labelColor=000000&color=000000"></a> <a href="#license"><img data-illustration alt="License" src="https://img.shields.io/npm/l/@antelopejs/cloud-sdk?style=for-the-badge&labelColor=000000&color=000000"></a> <a href="https://discord.gg/g4pFt6eXqu"><img data-illustration alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a> <a href="./cli/README.md"><img data-illustration alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a> <a href="https://github.com/AntelopeJS/antelopejs"><img data-illustration alt="Star AntelopeJS" src="https://img.shields.io/github/stars/AntelopeJS/antelopejs?label=Star%20AntelopeJS&style=for-the-badge&labelColor=000000&color=000000&logo=github"></a>
+
+**Antelope Cloud SDK (@antelopejs/cloud-sdk) and CLI (@antelopejs/cloud)**
+
+[CLI documentation](./cli/README.md) · [SDK documentation](./sdk/README.md) · [All interfaces and providers](https://github.com/AntelopeJS/antelopejs#ecosystem)
+
+</div>
 
 This repository holds the two public npm packages of AntelopeJS Cloud:
 
@@ -108,3 +120,11 @@ The CLI depends on a range of SDK versions, so release in this order:
 3. Run the workflow with `package: cli`. The first CLI release also sets `release-version` to `0.1.0`.
 
 The CLI run fails before it publishes when no version of `@antelopejs/cloud-sdk` that matches its range is on npm. When a CLI change needs a new SDK release, raise the range in `cli/package.json` and release the SDK first.
+
+## Part of AntelopeJS
+
+This tooling belongs to [AntelopeJS](https://github.com/AntelopeJS/antelopejs), the TypeScript framework where modules depend on contracts and the application chooses the provider. The open-source back office [AntelopeJS DMS](https://github.com/AntelopeJS/dms) is built on it.
+
+## License
+
+Both packages are licensed under Apache-2.0, as declared in [`sdk/package.json`](./sdk/package.json) and [`cli/package.json`](./cli/package.json).
