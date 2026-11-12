@@ -135,7 +135,9 @@ describe("first deploy from an unlinked folder", () => {
       "GET /api/cloud/projects/",
     ]);
   });
+});
 
+describe("first deploy to what already exists", () => {
   test("deploys to the user's existing project when confirmed", async () => {
     const current = await scripted("demo", { confirms: [true, true] });
     await run(current.runtime, ["deploy"]);
@@ -235,7 +237,9 @@ describe("first deploy from an unlinked folder", () => {
       ),
     );
   });
+});
 
+describe("first deploy refusals and retries", () => {
   test("proposes the next free slug when the user declines the existing project", async () => {
     const current = await scripted("demo", {
       prompts: ["", "", ""],
@@ -316,7 +320,9 @@ describe("first deploy from an unlinked folder", () => {
     });
     assert.deepEqual(api.requests, []);
   });
+});
 
+describe("first deploy app detection and options", () => {
   test("accepts an AntelopeJS project without a Dockerfile", async () => {
     const current = await scripted("fresh");
     await rm(join(current.root, "Dockerfile"));

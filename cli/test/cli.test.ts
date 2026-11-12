@@ -143,7 +143,9 @@ describe("CLI journeys", () => {
     );
     assert.deepEqual(await readProjectConfig(current.root), config());
   });
+});
 
+describe("CLI journeys: deploy and operate", () => {
   test("deploys the inferred subdirectory and follows progress", async () => {
     const current = await fixture();
     current.runtime.cwd = join(current.root, "apps", "api");

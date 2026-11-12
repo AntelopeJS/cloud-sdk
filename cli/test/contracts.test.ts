@@ -119,7 +119,9 @@ describe("contracts", () => {
     await utimes(join(root, "keep.txt"), 1, 2);
     assert.deepEqual(await createSourceArchive(root), archive);
   });
+});
 
+describe("contracts: Dockerfiles and streams", () => {
   test("refuses a Dockerfile read from the project file that leaves the service folder", async () => {
     const parent = await mkdtemp(join(tmpdir(), "cloud-dockerfile-escape-"));
     const root = join(parent, "service");
@@ -203,7 +205,9 @@ describe("contracts", () => {
       /service_path_outside_project/,
     );
   });
+});
 
+describe("contracts: the real binary", () => {
   test("parses split and final SSE frames", async () => {
     const response = new Response(progressFrames(), {
       headers: { "content-type": "text/event-stream" },

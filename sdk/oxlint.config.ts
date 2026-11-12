@@ -16,10 +16,6 @@ const NODE_TEST_CALLS = {
   name: ["describe", "test"],
 } as const;
 
-const TEST_RULES = {
-  "eslint/max-lines-per-function": "off",
-} as const;
-
 const BIOME_ERRORS = {
   "eslint/array-callback-return": "error",
   "eslint/no-case-declarations": "error",
@@ -55,5 +51,4 @@ export default defineConfig({
       { allowForKnownSafeCalls: [NODE_TEST_CALLS] },
     ],
   },
-  overrides: [{ files: ["test/**"], rules: TEST_RULES }],
 });

@@ -1,7 +1,0 @@
-{
-  "pack": "0.5.2",
-  "rules": {
-    "eslint/max-lines-per-function": 1
-  },
-  "oversizeFiles": {}
-}
