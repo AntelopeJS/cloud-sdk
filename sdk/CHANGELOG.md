@@ -1,6 +1,24 @@
 # Changelog
 
 
+## v0.1.5
+
+[compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.4...v0.1.5)
+
+### 🚀 Enhancements
+
+- **sdk:** Read the log of a build ([#11](https://github.com/AntelopeJS/cloud-sdk/pull/11))
+- **sdk:** Create a service built from a repository, with the Dockerfile that builds it ([#12](https://github.com/AntelopeJS/cloud-sdk/pull/12))
+
+### 📖 Documentation
+
+- **readme:** Adopt the AntelopeJS framework README style ([#13](https://github.com/AntelopeJS/cloud-sdk/pull/13))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+- Dada-sudo <damir@altab.be>
+
 ## v0.1.4
 
 [compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.3...v0.1.4)
