@@ -92,3 +92,45 @@ describe("service network settings", () => {
     }
   });
 });
+
+describe("a variable that follows a published value", () => {
+  const database = { serviceId: "svc-db", publishedKey: "MONGO_URL" };
+
+  test("names the variable, the publisher and its key in one POST, and accepts an answer with no body", async () => {
+    const { sent, send } = recorder(() => new Response(null, { status: 200 }));
+    const api = new CloudApi({ token: "t", fetch: send });
+
+    assert.equal(
+      await api.followPublishedValue("svc/3", "MONGODB_URL", database),
+      undefined,
+    );
+
+    assert.equal(sent[0]?.method, "POST");
+    assert.equal(sent[0]?.url, `${SERVICE}/variables/references`);
+    assert.deepEqual(JSON.parse(sent[0]?.body ?? ""), {
+      key: "MONGODB_URL",
+      serviceId: "svc-db",
+      publishedKey: "MONGO_URL",
+    });
+  });
+
+  test("a name the service already holds is a CloudApiError carrying the code", async () => {
+    const { send } = recorder(
+      () =>
+        new Response(JSON.stringify("cloud.errors.settings.duplicate_key"), {
+          status: 409,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    const api = new CloudApi({ token: "t", fetch: send });
+
+    await assert.rejects(
+      api.followPublishedValue("svc/3", "MONGODB_URL", database),
+      (error) => {
+        assert.ok(error instanceof CloudApiError);
+        assert.equal(error.code, "cloud.errors.settings.duplicate_key");
+        return true;
+      },
+    );
+  });
+});

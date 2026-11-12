@@ -42,6 +42,56 @@ paths:
             application/json:
               schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
         default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  variableReferences:
+    post:
+      operationId: followPublishedValue
+      description: |
+        Adds a variable to the service that follows a value another service of the same
+        environment publishes, such as the `MONGO_URL` of a MongoDB resource: the variable takes
+        the published value, and takes the new one when it changes. Listed afterwards with a
+        `resource` origin. The value itself is never sent to the client.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key, serviceId, publishedKey]
+              properties:
+                key:
+                  description: The name of the variable on the service.
+                  type: string
+                serviceId:
+                  description: The service that publishes the value.
+                  type: string
+                publishedKey:
+                  description: The key the publisher publishes the value under.
+                  type: string
+      responses:
+        '200':
+          description: Done
+        '400':
+          description: '`cloud.errors.settings.invalid_key`: the name is not a valid variable name. `cloud.errors.settings.self_reference`: a service cannot follow its own value.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '404':
+          description: '`cloud.errors.settings.unknown_publisher`: the environment has no such service. `cloud.errors.settings.key_not_published`: the publisher publishes no such key.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '409':
+          description: '`cloud.errors.settings.duplicate_key`: the service already holds a variable of that name. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
   network:
     put:
       operationId: setServiceExposure
