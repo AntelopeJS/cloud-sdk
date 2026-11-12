@@ -486,6 +486,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cloud/builds/{buildId}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The output of one build as server-sent events, for a member who may observe the
+         *     build's project. Same contract as a service's logs.
+         *
+         *     Each line is a `log` event: its data is `{ at, level, message, instance }` and its id
+         *     is the cursor to resume from. Without `follow` the read is a tail: the newest lines,
+         *     oldest first, then an `end` event. A read from the start opens with one line naming
+         *     how the build runs (`Build recipe: ...`), which has no cursor and does not count
+         *     towards `limit`. An `error` event carrying a `code` ends a stream the platform could
+         *     not serve.
+         */
+        get: operations["streamBuildLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cloud/deployments/{deploymentId}": {
         parameters: {
             query?: never;
@@ -1927,6 +1954,64 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": string;
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    streamBuildLogs: {
+        parameters: {
+            query?: {
+                /** @description Keeps the stream open and delivers the lines the build writes next. */
+                follow?: boolean;
+                /** @description The most lines the read returns before it ends. A tail holds 500 at most. */
+                limit?: number;
+            };
+            header?: {
+                /** @description The id of the last event received. The read resumes after it, oldest first. */
+                "Last-Event-ID"?: string;
+            };
+            path: {
+                buildId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server-sent log events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description A parameter the API cannot read, such as a `limit` that is not a positive integer. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.builds.not_found`: no such build, a build of another workspace or of a project the member may not observe, or one whose service was removed. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The member or the workspace already holds every live follow it may open. `Retry-After` says how long to wait. A read without `follow` is never refused this way. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
             default: components["responses"]["Error"];
