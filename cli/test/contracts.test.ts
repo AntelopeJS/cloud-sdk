@@ -207,7 +207,7 @@ describe("contracts: Dockerfiles and streams", () => {
   });
 });
 
-describe("contracts: the real binary", () => {
+describe("contracts: SSE, binary errors and messages", () => {
   test("parses split and final SSE frames", async () => {
     const response = new Response(progressFrames(), {
       headers: { "content-type": "text/event-stream" },
