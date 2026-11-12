@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.1.4
+
+[compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.3...v0.1.4)
+
+### 🚀 Enhancements
+
+- **sdk:** Set a service's port and exposure, and follow a published value ([#10](https://github.com/AntelopeJS/cloud-sdk/pull/10))
+
+### ❤️ Contributors
+
+- Dada-sudo <damir@altab.be>
+
 ## v0.1.3
 
 [compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.2...v0.1.3)
