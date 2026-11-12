@@ -400,6 +400,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cloud/services/{serviceId}/source-dockerfile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Names the Dockerfile, inside its repository, that builds the service, or goes back
+         *     to the root `Dockerfile` or a recipe with null. The next build reads it; the
+         *     revisions already built keep their image. A build of a commit that holds no file at
+         *     that path fails with `cloud.errors.builds.dockerfile_not_found`.
+         */
+        put: operations["setServiceDockerfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cloud/services/{serviceId}/variables/references": {
         parameters: {
             query?: never;
@@ -715,13 +737,15 @@ export interface components {
             environmentId: string;
             serviceId?: string | null;
         };
-        NewUploadService: {
+        /**
+         * @description A service to create in an environment. Its source says where its deployments come
+         *     from: an upload each `ajs cloud deploy` carries, or a repository AntelopeJS Cloud
+         *     builds at each push.
+         */
+        NewService: {
             name: string;
             appName: string;
-            source: {
-                /** @constant */
-                type: "upload";
-            };
+            source: components["schemas"]["UploadSource"] | components["schemas"]["RepositorySource"];
             port?: number | null;
             isPublic?: boolean;
         };
@@ -746,6 +770,7 @@ export interface components {
         };
         ServiceSettings: {
             serviceId: string;
+            source?: components["schemas"]["ServiceSettingsSource"];
             scaling: {
                 bounds: components["schemas"]["ServiceBounds"];
                 replicaLimit: number;
@@ -921,6 +946,31 @@ export interface components {
             environmentId: string;
             services: components["schemas"]["ServiceHealth"][];
         };
+        UploadSource: {
+            /** @constant */
+            type: "upload";
+        };
+        /**
+         * @description Path, inside the repository, of the Dockerfile that builds the service, such as
+         *     `frontend.Dockerfile` or `apps/web/Dockerfile`: plain segments of letters, digits,
+         *     `.`, `_` and `-`, separated by `/`. Null or absent: the root `Dockerfile` when the
+         *     repository has one, else a recipe.
+         */
+        DockerfilePath: string | null;
+        /**
+         * @description A GitHub repository the workspace's GitHub installation grants. Two services of one
+         *     repository differ by their Dockerfile: an API built by the AntelopeJS recipe next to
+         *     a dashboard built by `frontend.Dockerfile`.
+         */
+        RepositorySource: {
+            /** @constant */
+            type: "repository";
+            /** @description The repository, as `owner/name`. */
+            repository: string;
+            /** @description The branch this service builds; null or absent follows its environment's branch. */
+            branch?: string | null;
+            dockerfilePath?: components["schemas"]["DockerfilePath"];
+        };
         /** @description A monthly amount in the plan's currency. A plan that rates nothing a database holds includes it, with no amount to show. */
         MonthlyCost: {
             /** @constant */
@@ -1049,6 +1099,14 @@ export interface components {
             created: components["schemas"]["EnvironmentResource"][];
             /** @description The plan that remains once the databases are created. */
             plan: components["schemas"]["ResourcePlan"];
+        };
+        /** @description Where the service's deployments come from. */
+        ServiceSettingsSource: {
+            /** @enum {string} */
+            type: "repository" | "image" | "upload" | "database";
+            /** @description `owner/name`, for a repository source. */
+            repository?: string | null;
+            dockerfilePath?: components["schemas"]["DockerfilePath"];
         };
         /** @description What a built revision was built from. */
         RevisionBuild: {
@@ -1523,7 +1581,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["NewUploadService"];
+                "application/json": components["schemas"]["NewService"];
             };
         };
         responses: {
@@ -1785,6 +1843,51 @@ export interface operations {
                 content?: never;
             };
             /** @description `cloud.errors.settings.public_needs_port`: a service without a port cannot be opened. `cloud.errors.settings.subdomain_taken`: another service holds its address. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setServiceDockerfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    path: components["schemas"]["DockerfilePath"];
+                };
+            };
+        };
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cloud.errors.settings.invalid_dockerfile_path`: not a plain relative path inside the repository. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.not_a_repository_source`: the service does not build a repository. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
             409: {
                 headers: {
                     [name: string]: unknown;

@@ -194,19 +194,7 @@ components:
         region: { type: string }
         environmentId: { type: string }
         serviceId: { type: [string, "null"] }
-    NewUploadService:
-      type: object
-      required: [name, appName, source]
-      properties:
-        name: { type: string }
-        appName: { type: string }
-        source:
-          type: object
-          required: [type]
-          properties:
-            type: { type: string, const: upload }
-        port: { type: [integer, "null"] }
-        isPublic: { type: boolean }
+    NewService: { $ref: 'services.yaml#/schemas/NewService' }
     CreatedService:
       type: object
       required: [serviceId, name, appName]
@@ -239,6 +227,7 @@ components:
       required: [serviceId, scaling, volumeLimits]
       properties:
         serviceId: { type: string }
+        source: { $ref: 'services.yaml#/schemas/ServiceSettingsSource' }
         scaling:
           type: object
           required: [bounds, replicaLimit, pricing]
@@ -353,7 +342,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/NewUploadService' }
+            schema: { $ref: '#/components/schemas/NewService' }
       responses:
         '200':
           content:
@@ -387,6 +376,7 @@ paths:
         default: { $ref: '#/components/responses/Error' }
   /api/cloud/services/{serviceId}/port: { $ref: 'services.yaml#/paths/port' }
   /api/cloud/services/{serviceId}/network: { $ref: 'services.yaml#/paths/network' }
+  /api/cloud/services/{serviceId}/source-dockerfile: { $ref: 'services.yaml#/paths/sourceDockerfile' }
   /api/cloud/services/{serviceId}/variables/references: { $ref: 'services.yaml#/paths/variableReferences' }
   /api/cloud/services/{serviceId}/source-deployments:
     post:

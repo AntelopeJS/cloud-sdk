@@ -93,6 +93,129 @@ describe("service network settings", () => {
   });
 });
 
+describe("a service built from a repository", () => {
+  const SERVICES =
+    "https://api.antelopejs.cloud/api/cloud/projects/prj%2F1/environments/env%2F2/services";
+
+  test("is created with its repository and the Dockerfile that builds it, and answers its id", async () => {
+    const created = {
+      serviceId: "svc-9",
+      name: "dashboard",
+      appName: "shop-dashboard",
+    };
+    const { sent, send } = recorder(
+      () =>
+        new Response(JSON.stringify(created), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    const api = new CloudApi({ token: "t-1", fetch: send });
+
+    const answer = await api.createService("prj/1", "env/2", {
+      name: "dashboard",
+      appName: "shop-dashboard",
+      source: {
+        type: "repository",
+        repository: "acme/shop",
+        dockerfilePath: "frontend.Dockerfile",
+      },
+      port: 3000,
+      isPublic: true,
+    });
+
+    assert.deepEqual(answer, created);
+    assert.equal(sent[0]?.method, "POST");
+    assert.equal(sent[0]?.url, SERVICES);
+    assert.equal(sent[0]?.authorization, "Bearer t-1");
+    assert.deepEqual(JSON.parse(sent[0]?.body ?? ""), {
+      name: "dashboard",
+      appName: "shop-dashboard",
+      source: {
+        type: "repository",
+        repository: "acme/shop",
+        dockerfilePath: "frontend.Dockerfile",
+      },
+      port: 3000,
+      isPublic: true,
+    });
+  });
+
+  test("an upload service is still created as before", async () => {
+    const { sent, send } = recorder(
+      () =>
+        new Response(
+          JSON.stringify({ serviceId: "svc-1", name: "web", appName: "web" }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    );
+    const api = new CloudApi({ token: "t", fetch: send });
+
+    await api.createService("prj/1", "env/2", {
+      name: "web",
+      appName: "web",
+      source: { type: "upload" },
+    });
+
+    assert.deepEqual(JSON.parse(sent[0]?.body ?? ""), {
+      name: "web",
+      appName: "web",
+      source: { type: "upload" },
+    });
+  });
+
+  test("its Dockerfile is put at the encoded service path, null goes back to the default, and an answer with no body is accepted", async () => {
+    for (const status of [200, 204]) {
+      const { sent, send } = recorder(() => new Response(null, { status }));
+      const api = new CloudApi({ token: "t", fetch: send });
+
+      assert.equal(
+        await api.setServiceDockerfile("svc/3", "apps/web/Dockerfile"),
+        undefined,
+      );
+      await api.setServiceDockerfile("svc/3", null);
+
+      assert.deepEqual(
+        sent.map(
+          (request) => `${request.method} ${request.url} ${request.body}`,
+        ),
+        [
+          `PUT ${SERVICE}/source-dockerfile {"path":"apps/web/Dockerfile"}`,
+          `PUT ${SERVICE}/source-dockerfile {"path":null}`,
+        ],
+      );
+    }
+  });
+
+  test("a refused Dockerfile is a CloudApiError carrying the code", async () => {
+    const refusals: Array<[number, string]> = [
+      [400, "cloud.errors.settings.invalid_dockerfile_path"],
+      [409, "cloud.errors.settings.not_a_repository_source"],
+    ];
+
+    for (const [status, code] of refusals) {
+      const { send } = recorder(
+        () =>
+          new Response(JSON.stringify(code), {
+            status,
+            headers: { "content-type": "application/json" },
+          }),
+      );
+      const api = new CloudApi({ token: "t", fetch: send });
+
+      await assert.rejects(
+        api.setServiceDockerfile("svc/3", "../Dockerfile"),
+        (error) => {
+          assert.ok(error instanceof CloudApiError);
+          assert.equal(error.status, status);
+          assert.equal(error.code, code);
+          return true;
+        },
+      );
+    }
+  });
+});
+
 describe("a variable that follows a published value", () => {
   const database = { serviceId: "svc-db", publishedKey: "MONGO_URL" };
 
