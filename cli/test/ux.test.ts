@@ -148,7 +148,9 @@ describe("C3: login polling", () => {
       workspaceName: "E2E Source 1001",
     });
   });
+});
 
+describe("C3: login code rate limit", () => {
   test("waits out a busy network's rate limit on the login code", async () => {
     const current = await fixture({ isLinked: false, isLoggedIn: false });
     let creates = 0;

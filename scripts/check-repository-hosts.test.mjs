@@ -92,9 +92,9 @@ function commitOf(directory, revision) {
   return git(directory, ["rev-parse", revision]).trim().slice(0, 12);
 }
 
-describe("check-repository-hosts", () => {
-  after(() => rmSync(root, { recursive: true, force: true }));
+after(() => rmSync(root, { recursive: true, force: true }));
 
+describe("check-repository-hosts", () => {
   it("passes production, reserved, loopback and third-party hosts", () => {
     const directory = repository("clean", [
       {
@@ -138,7 +138,9 @@ describe("check-repository-hosts", () => {
       ].join("\n"),
     );
   });
+});
 
+describe("check-repository-hosts: the tree", () => {
   it("fails a tracked file that names a private host", () => {
     const directory = repository("tree", [
       {
@@ -225,7 +227,9 @@ describe("check-repository-hosts", () => {
       `hosts.txt:8: names host ${PRINTER}`,
     ]);
   });
+});
 
+describe("check-repository-hosts: the history", () => {
   it("fails a host that only a merge resolution added", () => {
     const directory = repository("merge", [
       { files: { "a.txt": "a\n" }, message: "chore: base" },

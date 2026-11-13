@@ -1,14 +1,14 @@
 {
   "rules": {
-    "anti-slop/no-unknown-parameters": 2
+    "anti-slop/no-unknown-parameters": 0
   },
   "tsExpectError": 0,
   "tsIgnore": 0,
   "safety": 0,
   "config": {
-    "anti-slop/no-chained-type-assertions for cli/src/config.ts": 1,
-    "eslint/max-lines-per-function for cli/test/**": 1,
-    "eslint/max-lines-per-function for sdk/test/**": 1
+    "anti-slop/no-chained-type-assertions for cli/src/config.ts": 0,
+    "eslint/max-lines-per-function for cli/test/**": 0,
+    "eslint/max-lines-per-function for sdk/test/**": 0
   },
   "agentFiles": true
 }

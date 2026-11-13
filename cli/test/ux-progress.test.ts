@@ -151,7 +151,9 @@ describe("C5: deploy progress", () => {
     progress.update({ event: "status-changed", data: { status: "failed" } });
     assert.deepEqual(output, ["ℹ web: building · 0s", "ℹ web: failed · 0s"]);
   });
+});
 
+describe("C5: deploy progress on a terminal and its endings", () => {
   test("keeps its task up to date on a terminal, then removes it", () => {
     const { runtime, output } = progressRuntime({ now: 5_000 });
     const tasks = new RecordedTasks();
@@ -244,7 +246,9 @@ describe("C5: deploy progress", () => {
       },
     );
   });
+});
 
+describe("C5: deploy progress failures and reconnects", () => {
   test("a failed build gives why it failed, and a retry hint when the platform did", async () => {
     const current = await fixture();
     routes[PROGRESS_PATH] = sse(frame("status-changed", { status: "failed" }));

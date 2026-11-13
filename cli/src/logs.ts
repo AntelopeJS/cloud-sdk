@@ -23,7 +23,7 @@ const TOO_MANY_REQUESTS_STATUS = 429;
 const INITIAL_REFUSAL_DELAY_MS = 1_000;
 const MAX_REFUSAL_DELAY_MS = 30_000;
 
-interface LogData {
+export interface LogData {
   at: string;
   level: string;
   message: string;
