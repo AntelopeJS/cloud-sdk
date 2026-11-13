@@ -1,8 +1,12 @@
 /** The production API, and the app domain deployed services answer on. */
 const PRODUCTION_HOSTS = new Set(["api.antelopejs.cloud"]);
 const PRODUCTION_APP_DOMAIN = "antelopejs.io";
-/** Where the manifest says the source and the registry are. */
-const PACKAGE_METADATA_HOSTS = new Set(["github.com", "registry.npmjs.org"]);
+/** Where the manifest says the source, the registry and the license text are. */
+const PACKAGE_METADATA_HOSTS = new Set([
+  "github.com",
+  "registry.npmjs.org",
+  "www.apache.org",
+]);
 /** RFC 2606 and RFC 6761 names for documentation, which never reach a deployment. */
 const RESERVED_HOST = /(?:^|\.)(?:example(?:\.com|\.org|\.net)?|test|invalid)$/;
 /**

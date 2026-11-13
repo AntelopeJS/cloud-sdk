@@ -59,6 +59,17 @@ describe("check-package-hosts", () => {
     assert.equal(result.stderr, "");
   });
 
+  it("passes a package that ships the Apache-2.0 license text", () => {
+    const result = check(
+      packageSaying(
+        "licensed",
+        "                              http://www.apache.org/licenses/",
+      ),
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stderr, "");
+  });
+
   it("fails a package that names a staging endpoint", () => {
     const result = check(
       packageSaying(
