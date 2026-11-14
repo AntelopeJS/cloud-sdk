@@ -1,6 +1,30 @@
 # Changelog
 
 
+## v0.1.6
+
+[compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.5...v0.1.6)
+
+### 🩹 Fixes
+
+- **license:** Ship the Apache-2.0 LICENSE in both npm tarballs ([#16](https://github.com/AntelopeJS/cloud-sdk/pull/16))
+
+### 💅 Refactors
+
+- Bring suppressions and lint debt to zero ([#15](https://github.com/AntelopeJS/cloud-sdk/pull/15))
+
+### 📖 Documentation
+
+- **license:** Add the Apache-2.0 LICENSE and link the README to it ([#14](https://github.com/AntelopeJS/cloud-sdk/pull/14))
+
+### 📦 Build
+
+- **deps:** Move to tooling-configs 0.6.0 and cap the @antelopejs ranges ([#17](https://github.com/AntelopeJS/cloud-sdk/pull/17))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.1.5
 
 [compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.4...v0.1.5)
