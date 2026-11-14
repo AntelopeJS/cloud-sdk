@@ -10,7 +10,7 @@
     "releaseName": "@antelopejs/cloud-sdk v${version}"
   },
   "hooks": {
-    "after:bump": "git add CHANGELOG.md"
+    "after:bump": "git add CHANGELOG.md && pnpm --workspace-root run sync && git add ../cli/README.md"
   },
   "plugins": {
     "release-it-changelogen": {
