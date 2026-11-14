@@ -202,7 +202,11 @@ describe("C5: deploy progress on a terminal and its endings", () => {
     );
   });
 
-  test("Ctrl+C says the deployment keeps running and how to follow it", async () => {
+  test("Ctrl+C says the deployment keeps running and how to follow it", async (context) => {
+    if (process.platform === "win32")
+      return context.skip(
+        "Windows kills a child on kill('SIGINT'): only a console Ctrl+C raises SIGINT there",
+      );
     const current = await fixture();
     routes[PROGRESS_PATH] = sse(frame("state", { status: "queued" }), true);
     const binary = startBinary(

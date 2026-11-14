@@ -8,8 +8,14 @@
  *
  * Prints failures only. Usage: node scripts/check-package-hosts.mjs sdk cli
  */
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { execFileSync, execSync } from "node:child_process";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { hostsOf, isPublishableHost, STAGING_PATTERN } from "./hosts.mjs";
@@ -53,15 +59,15 @@ function findingsOf(name, text) {
 function checkPackage(directory) {
   const output = mkdtempSync(join(tmpdir(), "package-hosts-"));
   try {
-    execFileSync("npm", ["pack", "--pack-destination", output], {
+    execSync(`npm pack --pack-destination "${output}"`, {
       cwd: directory,
       stdio: "pipe",
     });
     const tarball = readdirSync(output).find((name) => name.endsWith(".tgz"));
     if (!tarball) throw new Error(`npm pack wrote no tarball for ${directory}`);
     const unpacked = join(output, "unpacked");
-    execFileSync("mkdir", [unpacked]);
-    execFileSync("tar", ["-xzf", join(output, tarball), "-C", unpacked]);
+    mkdirSync(unpacked);
+    execFileSync("tar", ["-xzf", tarball, "-C", "unpacked"], { cwd: output });
     return filesOf(unpacked).flatMap((file) =>
       findingsOf(
         `${directory}/${relative(join(unpacked, "package"), file)}`,

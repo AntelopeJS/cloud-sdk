@@ -41,7 +41,7 @@ function trackedFileFindings() {
     .filter(Boolean)
     .flatMap((path) => {
       const text = lstatSync(path).isSymbolicLink()
-        ? readlinkSync(path)
+        ? readlinkSync(path).replaceAll("\\", "/")
         : readFileSync(path, "utf8");
       if (text.includes("\0")) return [];
       return text
