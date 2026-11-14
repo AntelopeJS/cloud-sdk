@@ -53,8 +53,8 @@ importers:
         version: 3.2.2(bare-buffer@3.7.1)
     devDependencies:
       '@antelopejs/core':
-        specifier: ~1.21.0
-        version: 1.21.2
+        specifier: ~1.23.0
+        version: 1.23.0
       '@antelopejs/tooling-configs':
         specifier: '>=0.6.0 <0.7.0'
         version: 0.6.0(knip@6.45.1)(oxfmt@0.77.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2006))
@@ -131,13 +131,13 @@ importers:
 
 packages:
 
-  '@antelopejs/core@1.21.2':
-    resolution: {integrity: sha512-3TaRUOADEv9ZKxXPfTbfU8orzWaBH1gVfpOD6HOiVsH64QKOkvBRHbZ2ATBihR64kgh2N6FoR+rqByJ9IhfIug==}
+  '@antelopejs/core@1.23.0':
+    resolution: {integrity: sha512-RZvKjGqY8UntJxBNXtoYSSQwQxvM+WUgWfwB/YbQVk7K7GFugDCj3zyoLWmWyQDg48lwNbfrLDAMGvQ4OFy1Jg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
-  '@antelopejs/interface-core@0.4.1':
-    resolution: {integrity: sha512-6UZWBp4IXHUNqP26uaqG+kmDfJW79LvPpskITmoouv57zsZ0RgyCLfc0sHs7Bcj/88hvhy/KLYgQ51p11IlBjQ==}
+  '@antelopejs/interface-core@0.5.1':
+    resolution: {integrity: sha512-ON/7TYA1yyT8UznzKi6vnwyjRU3byNE0OcFXBmf8dE/dqp8hKjeWHVyA2EUPOngmEimCLw4idZqOS5DJqMJx3g==}
 
   '@antelopejs/tooling-configs@0.6.0':
     resolution: {integrity: sha512-DtGbS8grU8KKoB/HcvxKfwQy2AqQh7OUF2it85zf4czzZPodgdsw1/Ajj4onJvOYygqNgcd7D7EdDFtmY7FuDA==}
@@ -2426,9 +2426,9 @@ packages:
 
 snapshots:
 
-  '@antelopejs/core@1.21.2':
+  '@antelopejs/core@1.23.0':
     dependencies:
-      '@antelopejs/interface-core': 0.4.1
+      '@antelopejs/interface-core': 0.5.1
       '@clack/prompts': 1.9.0
       '@types/proper-lockfile': 4.1.4
       commander: 13.1.0
@@ -2441,7 +2441,7 @@ snapshots:
       semver: 7.8.6
       typescript: 5.9.3
 
-  '@antelopejs/interface-core@0.4.1':
+  '@antelopejs/interface-core@0.5.1':
     dependencies:
       reflect-metadata: 0.2.2
 

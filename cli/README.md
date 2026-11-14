@@ -281,6 +281,6 @@ README and `package.json`.
 | Package                 | Supported        | Tested with |
 | ----------------------- | ---------------- | ----------- |
 | `@antelopejs/cloud-sdk` | `>=0.1.0 <0.2.0` | `0.1.5`     |
-| `@antelopejs/core`      | `~1.21.0`        | `1.21.2`    |
+| `@antelopejs/core`      | `~1.23.0`        | `1.23.0`    |
 
 <!-- antelopejs-docs-compat:end -->
