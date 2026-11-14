@@ -280,7 +280,7 @@ README and `package.json`.
 
 | Package                 | Supported        | Tested with |
 | ----------------------- | ---------------- | ----------- |
-| `@antelopejs/cloud-sdk` | `>=0.1.0 <0.2.0` | `0.1.5`     |
+| `@antelopejs/cloud-sdk` | `>=0.1.0 <0.2.0` | `0.1.6`     |
 | `@antelopejs/core`      | `~1.23.0`        | `1.23.0`    |
 
 <!-- antelopejs-docs-compat:end -->
