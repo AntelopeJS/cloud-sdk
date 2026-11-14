@@ -14,6 +14,7 @@ jobs:
     uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v1
     with:
       renovate-sync: false
+      windows: false
       extra-commands: |
         git fetch --quiet --unshallow origin "$GITHUB_SHA"
         pnpm run check:hosts
