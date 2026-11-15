@@ -1,6 +1,24 @@
 # Changelog
 
 
+## v0.2.0
+
+[compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-cli-v0.1.2...v0.2.0)
+
+### 🩹 Fixes
+
+- **release:** Resync the cli README in the sdk release commit ([#19](https://github.com/AntelopeJS/cloud-sdk/pull/19))
+- **cli:** Accept @antelopejs/core 1.24 ([#22](https://github.com/AntelopeJS/cloud-sdk/pull/22))
+
+### 🤖 CI
+
+- Opt out of Windows jobs in ci-node.yml ([#20](https://github.com/AntelopeJS/cloud-sdk/pull/20))
+- Run the Windows jobs again ([#21](https://github.com/AntelopeJS/cloud-sdk/pull/21))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.1.2
 
 [compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-cli-v0.1.1...v0.1.2)
