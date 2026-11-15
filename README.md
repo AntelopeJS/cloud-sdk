@@ -6,7 +6,7 @@
 
 <a href="https://www.npmjs.com/package/@antelopejs/cloud-sdk"><img data-illustration alt="npm @antelopejs/cloud-sdk" src="https://img.shields.io/npm/v/@antelopejs/cloud-sdk?label=cloud-sdk&style=for-the-badge&labelColor=000000&color=000000"></a> <a href="https://www.npmjs.com/package/@antelopejs/cloud"><img data-illustration alt="npm @antelopejs/cloud" src="https://img.shields.io/npm/v/@antelopejs/cloud?label=cloud&style=for-the-badge&labelColor=000000&color=000000"></a> <a href="./LICENSE"><img data-illustration alt="License" src="https://img.shields.io/npm/l/@antelopejs/cloud-sdk?style=for-the-badge&labelColor=000000&color=000000"></a> <a href="https://discord.gg/g4pFt6eXqu"><img data-illustration alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a> <a href="./cli/README.md"><img data-illustration alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a> <a href="https://github.com/AntelopeJS/antelopejs"><img data-illustration alt="Star AntelopeJS" src="https://img.shields.io/github/stars/AntelopeJS/antelopejs?label=Star%20AntelopeJS&style=for-the-badge&labelColor=000000&color=000000&logo=github"></a>
 
-**Antelope Cloud SDK (@antelopejs/cloud-sdk) and CLI (@antelopejs/cloud)**
+**AntelopeJS Cloud SDK (@antelopejs/cloud-sdk) and CLI (@antelopejs/cloud)**
 
 [CLI documentation](./cli/README.md) · [SDK documentation](./sdk/README.md) · [All interfaces and providers](https://github.com/AntelopeJS/antelopejs#ecosystem)
 
@@ -103,21 +103,13 @@ CI runs both commands on every pull request and on every push to `main`.
 
 The **Release public npm package** workflow publishes one package per run, from `main` for the `latest` channel or from `next` for the `next` channel. It publishes with npm provenance through the shared `release-npm-public.yml` workflow of `AntelopeJS/.github`.
 
-Each package's changelog starts from that package's last tag. Before the first release, tag the first commit of `main` for both packages and push the tags:
-
-```sh
-git tag cloud-sdk-v0.0.0 "$(git rev-list --max-parents=0 origin/main)"
-git tag cloud-cli-v0.0.0 "$(git rev-list --max-parents=0 origin/main)"
-git push origin cloud-sdk-v0.0.0 cloud-cli-v0.0.0
-```
-
-The workflow fails before it publishes when the package has no tag. A package releases only when a commit since its last tag changed its directory.
+Each package's changelog starts from that package's last tag, `cloud-sdk-v<version>` or `cloud-cli-v<version>`. The workflow fails before it publishes when the package has no tag. A package releases only when a commit since its last tag changed its directory.
 
 The CLI depends on a range of SDK versions, so release in this order:
 
-1. Run the workflow with `package: sdk`. The first SDK release sets `release-version` to `0.1.0`, the first version in the range that the CLI depends on.
+1. Run the workflow with `package: sdk`.
 2. Check that the new version of `@antelopejs/cloud-sdk` is on npm.
-3. Run the workflow with `package: cli`. The first CLI release also sets `release-version` to `0.1.0`.
+3. Run the workflow with `package: cli`.
 
 The CLI run fails before it publishes when no version of `@antelopejs/cloud-sdk` that matches its range is on npm. When a CLI change needs a new SDK release, raise the range in `cli/package.json` and release the SDK first.
 
