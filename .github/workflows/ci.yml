@@ -13,8 +13,9 @@ permissions:
 
 jobs:
   ci:
-    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v2
+    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@ci/wdf26acfc-25-affected-tests
     with:
+      affected-tests: true
       renovate-sync: false
       windows: true
       windows-pull-requests: true
