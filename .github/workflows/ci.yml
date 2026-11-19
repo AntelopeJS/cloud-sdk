@@ -16,6 +16,7 @@ jobs:
     uses: AntelopeJS/.github/.github/workflows/ci-node.yml@ci/wdf26acfc-25-affected-tests
     with:
       affected-tests: true
+      single-job: false
       renovate-sync: false
       windows: true
       windows-pull-requests: true
