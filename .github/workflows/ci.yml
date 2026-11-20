@@ -19,7 +19,7 @@ jobs:
     with:
       renovate-sync: false
       windows: true
-      windows-pull-requests: true
+      windows-merge-queue: true
       extra-commands: |
         [ "$(git rev-parse --is-shallow-repository)" = false ] || git fetch --quiet --unshallow origin "$GITHUB_SHA"
         pnpm run check:hosts
