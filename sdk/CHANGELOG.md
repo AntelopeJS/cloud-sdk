@@ -1,6 +1,26 @@
 # Changelog
 
 
+## v0.1.7
+
+[compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.6...cloud-sdk-v0.1.7)
+
+### 🩹 Fixes
+
+- **release:** Resync the cli README in the sdk release commit ([#19](https://github.com/AntelopeJS/cloud-sdk/pull/19))
+
+### 📦 Build
+
+- Move to @antelopejs/tooling-configs 0.8 and the three-tier CI ([#24](https://github.com/AntelopeJS/cloud-sdk/pull/24), [#25](https://github.com/AntelopeJS/cloud-sdk/pull/25))
+
+### 🤖 CI
+
+- Move to trunk-based CI on main with the merge queue ([#28](https://github.com/AntelopeJS/cloud-sdk/pull/28))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.1.6
 
 [compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.5...v0.1.6)
