@@ -105,13 +105,13 @@ The **Release public npm package** workflow publishes one package per run, from 
 
 Each package's changelog starts from that package's last tag, `cloud-sdk-v<version>` or `cloud-cli-v<version>`. The workflow fails before it publishes when the package has no tag. A package releases only when a commit since its last tag changed its directory.
 
-The CLI depends on a range of SDK versions, so release in this order:
+The CLI depends on the SDK as `workspace:^`, which publishing turns into a `^` range of the SDK's current version, so release in this order:
 
 1. Run the workflow with `package: sdk`.
 2. Check that the new version of `@antelopejs/cloud-sdk` is on npm.
 3. Run the workflow with `package: cli`.
 
-The CLI run fails before it publishes when no version of `@antelopejs/cloud-sdk` that matches its range is on npm. When a CLI change needs a new SDK release, raise the range in `cli/package.json` and release the SDK first.
+The CLI run fails before it publishes when no version of `@antelopejs/cloud-sdk` that matches its range is on npm. When a CLI change needs a new SDK release, release the SDK first.
 
 ## Part of AntelopeJS
 

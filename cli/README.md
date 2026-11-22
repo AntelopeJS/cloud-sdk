@@ -252,8 +252,9 @@ strings, or fragments.
 
 ## Development
 
-The API client is `@antelopejs/cloud-sdk`. The workspace's `pnpm-workspace.yaml`
-links `../sdk` in place of the published package, and `pnpm run sdk` builds it.
+The API client is `@antelopejs/cloud-sdk`. The CLI depends on it as
+`workspace:^`, so pnpm links `../sdk` in place of the published package, and
+`pnpm run sdk` builds it.
 `build` and `typecheck` run it first.
 
 ```sh
@@ -278,9 +279,9 @@ README and `package.json`.
 
 <!-- antelopejs-docs-compat:start -->
 
-| Package                 | Supported        | Tested with |
-| ----------------------- | ---------------- | ----------- |
-| `@antelopejs/cloud-sdk` | `>=0.1.0 <0.2.0` | `0.1.7`     |
-| `@antelopejs/core`      | `~1.24.0`        | `1.24.0`    |
+| Package                 | Supported | Tested with |
+| ----------------------- | --------- | ----------- |
+| `@antelopejs/cloud-sdk` | `^0.1.7`  | `0.1.7`     |
+| `@antelopejs/core`      | `~1.24.0` | `1.24.0`    |
 
 <!-- antelopejs-docs-compat:end -->
