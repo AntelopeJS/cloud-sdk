@@ -1,6 +1,28 @@
 # Changelog
 
 
+## v0.2.1
+
+[compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-cli-v0.2.0...cloud-cli-v0.2.1)
+
+### 🩹 Fixes
+
+- **cli:** Depend on the workspace sdk as workspace:^ ([#34](https://github.com/AntelopeJS/cloud-sdk/pull/34))
+
+### 📦 Build
+
+- Move to @antelopejs/tooling-configs 0.8 and the three-tier CI ([#24](https://github.com/AntelopeJS/cloud-sdk/pull/24), [#25](https://github.com/AntelopeJS/cloud-sdk/pull/25))
+
+### 🤖 CI
+
+- Move to trunk-based CI on main with the merge queue ([#28](https://github.com/AntelopeJS/cloud-sdk/pull/28))
+- Re-sync the AntelopeJS pack for the release app ([#32](https://github.com/AntelopeJS/cloud-sdk/pull/32))
+- Stop forwarding the retired RELEASE_GITHUB_TOKEN ([#33](https://github.com/AntelopeJS/cloud-sdk/pull/33))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.2.0
 
 [compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-cli-v0.1.2...v0.2.0)
