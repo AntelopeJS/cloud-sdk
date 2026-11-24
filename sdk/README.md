@@ -61,6 +61,108 @@ Until a person approves the code, `exchangeDevice` refuses with
 asks for five more seconds between polls. Both functions take the same
 `baseUrl` and `fetch` options as the client.
 
+## Create a project once
+
+Pass an `idempotencyKey`, 1 to 255 visible ASCII characters, so that a retried create answers the project the first call made:
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+
+const project = await api.createProject(
+  { slug: "shop" },
+  { idempotencyKey: "shop-create-1" },
+);
+console.log(project);
+```
+
+The key is scoped to the workspace and to the member who sends it. The same key with another body is refused with `cloud.errors.projects.idempotency_key_reused`, and `cloud.errors.projects.creation_in_progress` asks for a retry with the same key.
+
+## Create a service from a repository
+
+A `repository` source builds a repository at each push to its branch, with the Dockerfile `dockerfilePath` names. Give the container's `port`, and set `isPublic` to serve it on its own address:
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const projectId = "…";
+const environmentId = "…";
+
+const service = await api.createService(projectId, environmentId, {
+  name: "dashboard",
+  appName: "dashboard",
+  source: {
+    type: "repository",
+    repository: "acme/shop",
+    dockerfilePath: "frontend.Dockerfile",
+  },
+  port: 3000,
+  isPublic: true,
+});
+console.log(service);
+```
+
+## Port and exposure
+
+A service built from a repository has no port, and is refused its deployments until it has one. Both setters take effect at the next deployment:
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const serviceId = "…";
+
+await api.setServicePort(serviceId, 8080); // 1024 to 65535, or null to clear
+await api.setServiceExposure(serviceId, true); // false closes it again
+```
+
+`setServiceExposure` refuses a service without a port with `cloud.errors.settings.public_needs_port`.
+
+## List a project's deployments
+
+`api.projectDeployments.list` returns one page of deployments across all environments, newest first. Follow `nextCursor` while it is not `null`, with the same filters:
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const projectId = "…";
+
+let cursor: string | undefined;
+do {
+  const page = await api.projectDeployments.list(projectId, {
+    status: ["failed"],
+    limit: 50,
+    cursor,
+  });
+  for (const deployment of page.deployments) {
+    console.log(deployment.number, deployment.status, deployment.commit);
+  }
+  cursor = page.nextCursor ?? undefined;
+} while (cursor);
+```
+
+`environmentId` restricts the list to one environment, and `limit` is 1 to 100.
+
+## Read a build's logs
+
+`api.buildLogs` streams the output of one build as `log` events, then `end`. Without `follow` it is the newest `limit` lines (500 at most), oldest first; with `follow` it tails the build:
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const buildId = "…";
+
+for await (const event of api.buildLogs(buildId, { follow: false, limit: 200 })) {
+  if (event.event === "log") console.log(event.data);
+}
+```
+
+A build that is unknown, of another workspace, or whose service was removed is refused with 404 `cloud.errors.builds.not_found`. The `buildId` is the one `deploy` returns in its receipt.
+
 ## Types
 
 `paths`, `components` and `operations` are the types generated from
