@@ -66,8 +66,15 @@ asks for five more seconds between polls. Both functions take the same
 Pass an `idempotencyKey`, 1 to 255 visible ASCII characters, so that a retried create answers the project the first call made:
 
 ```ts
-const body = { slug: "shop" };
-const project = await api.createProject(body, { idempotencyKey: "shop-create-1" });
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+
+const project = await api.createProject(
+  { slug: "shop" },
+  { idempotencyKey: "shop-create-1" },
+);
+console.log(project);
 ```
 
 The key is scoped to the workspace and to the member who sends it. The same key with another body is refused with `cloud.errors.projects.idempotency_key_reused`, and `cloud.errors.projects.creation_in_progress` asks for a retry with the same key.
@@ -77,6 +84,12 @@ The key is scoped to the workspace and to the member who sends it. The same key 
 A `repository` source builds a repository at each push to its branch, with the Dockerfile `dockerfilePath` names. Give the container's `port`, and set `isPublic` to serve it on its own address:
 
 ```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const projectId = "…";
+const environmentId = "…";
+
 const service = await api.createService(projectId, environmentId, {
   name: "dashboard",
   appName: "dashboard",
@@ -88,6 +101,7 @@ const service = await api.createService(projectId, environmentId, {
   port: 3000,
   isPublic: true,
 });
+console.log(service);
 ```
 
 ## Port and exposure
@@ -95,6 +109,11 @@ const service = await api.createService(projectId, environmentId, {
 A service built from a repository has no port, and is refused its deployments until it has one. Both setters take effect at the next deployment:
 
 ```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const serviceId = "…";
+
 await api.setServicePort(serviceId, 8080); // 1024 to 65535, or null to clear
 await api.setServiceExposure(serviceId, true); // false closes it again
 ```
@@ -106,6 +125,11 @@ await api.setServiceExposure(serviceId, true); // false closes it again
 `api.projectDeployments.list` returns one page of deployments across all environments, newest first. Follow `nextCursor` while it is not `null`, with the same filters:
 
 ```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const projectId = "…";
+
 let cursor: string | undefined;
 do {
   const page = await api.projectDeployments.list(projectId, {
@@ -127,6 +151,11 @@ do {
 `api.buildLogs` streams the output of one build as `log` events, then `end`. Without `follow` it is the newest `limit` lines (500 at most), oldest first; with `follow` it tails the build:
 
 ```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const buildId = "…";
+
 for await (const event of api.buildLogs(buildId, { follow: false, limit: 200 })) {
   if (event.event === "log") console.log(event.data);
 }
