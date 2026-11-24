@@ -59,7 +59,7 @@ try {
 }
 ```
 
-The [SDK README](sdk/README.md) covers device login, errors, and the generated types.
+The [SDK README](sdk/README.md) covers device login, errors, idempotent project creation, services built from a repository, port and exposure, deployment listing, build logs, and the generated types.
 
 ## Point at another API
 
