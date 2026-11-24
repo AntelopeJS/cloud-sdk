@@ -106,7 +106,7 @@ console.log(service);
 
 ## Port and exposure
 
-A service built from a repository has no port, and is refused its deployments until it has one. Both setters take effect at the next deployment:
+A service that a project creation builds from a repository starts without a port, and is refused its deployments until it has one; a service created with a port, like the `port: 3000` above, keeps it. Only the port setter waits for a deployment: the running revision keeps the port it was deployed with, and the next deployment takes the new one. `setServiceExposure` opens the service to the internet on its own address, or closes it:
 
 ```ts
 import { CloudApi } from "@antelopejs/cloud-sdk";
