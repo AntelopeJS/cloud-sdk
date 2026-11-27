@@ -5,7 +5,13 @@ import { EnvironmentsApi, ProjectRepositoryApi } from "./environments.js";
 import type { components, paths } from "./generated/cloud-api.js";
 import { isRecord, isString } from "./guards.js";
 import { type BuildLogRequest, type LogRequest, logReadOf } from "./logs.js";
-import { acceptedOf, dataOf, isApiErrorBody, refusal } from "./result.js";
+import {
+  acceptedOf,
+  dataOf,
+  isApiErrorBody,
+  refusal,
+  type ApiErrorBody,
+} from "./result.js";
 import { parseSse, type SseEvent } from "./sse.js";
 
 /** What the API answers to an accepted source upload. */
@@ -78,6 +84,15 @@ function isDeploymentReceipt(value: unknown): value is DeploymentReceipt {
     isString(value.buildId) &&
     value.status === "queued"
   );
+}
+
+function errorBodyOf(text: string): ApiErrorBody | undefined {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return isApiErrorBody(parsed) ? parsed : undefined;
+  } catch {
+    return text;
+  }
 }
 
 function endpointClient(options: EndpointOptions = {}) {
@@ -446,13 +461,7 @@ export class CloudApi {
     });
     if (response.ok) return response;
     const text = await response.text();
-    let body: unknown = text;
-    try {
-      body = JSON.parse(text);
-    } catch {
-      /** The response is already useful as plain text. */
-    }
-    throw refusal(response, isApiErrorBody(body) ? body : undefined, text);
+    throw refusal(response, errorBodyOf(text), text);
   }
 
   private async *stream(

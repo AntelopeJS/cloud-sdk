@@ -13,11 +13,6 @@ const PORT_PATTERN = /^\d+$/;
 const WEB_PROTOCOLS = ["http:", "https:"];
 
 /**
- * The API URL without its trailing slash, refused when it is not a plain
- * http(s) URL: a token is never sent with credentials, a query or a fragment
- * someone else chose.
- */
-/**
  * An URL as it may be shown back: without the credentials, query or fragment
  * that make it invalid, since they may be secrets.
  */
@@ -30,6 +25,11 @@ function shownUrl(url: URL): string {
   return shown.href;
 }
 
+/**
+ * The API URL without its trailing slash, refused when it is not a plain
+ * http(s) URL: a token is never sent with credentials, a query or a fragment
+ * someone else chose.
+ */
 export function normalizedApiUrl(value: string): string {
   let url: URL;
   try {
