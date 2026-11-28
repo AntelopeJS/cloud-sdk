@@ -418,3 +418,49 @@ describe("a variable that follows a published value", () => {
     );
   });
 });
+
+describe("a service volume", () => {
+  const VOLUME = { name: "data", mountPath: "/data", sizeGb: 5 };
+
+  test("is posted to the encoded service's volumes path with its name, mount path and size", async () => {
+    const { sent, send } = recorder(() => new Response(null, { status: 200 }));
+    const api = new CloudApi({ token: "t-1", fetch: send });
+
+    assert.equal(await api.attachServiceVolume("svc/3", VOLUME), undefined);
+
+    assert.deepEqual(
+      sent.map((request) => `${request.method} ${request.url} ${request.body}`),
+      [
+        `POST ${SERVICE}/volumes {"name":"data","mountPath":"/data","sizeGb":5}`,
+      ],
+    );
+    assert.equal(sent[0]?.authorization, "Bearer t-1");
+  });
+
+  test("a refusal is a CloudApiError carrying its status and code", async () => {
+    for (const [status, code] of [
+      [400, "cloud.errors.settings.invalid_volume"],
+      [409, "cloud.errors.settings.volume_already_attached"],
+      [409, "cloud.errors.limits.volumes_per_workspace"],
+    ] as const) {
+      const { send } = recorder(
+        () =>
+          new Response(JSON.stringify(code), {
+            status,
+            headers: { "content-type": "application/json" },
+          }),
+      );
+      const api = new CloudApi({ token: "t", fetch: send });
+
+      await assert.rejects(
+        api.attachServiceVolume("svc/3", VOLUME),
+        (error) => {
+          assert.ok(error instanceof CloudApiError);
+          assert.equal(error.status, status);
+          assert.equal(error.code, code);
+          return true;
+        },
+      );
+    }
+  });
+});

@@ -224,7 +224,7 @@ components:
         memory: { type: number }
     ServiceSettings:
       type: object
-      required: [serviceId, scaling, volumeLimits]
+      required: [serviceId, scaling, volumes, volumeLimits]
       properties:
         serviceId: { type: string }
         source: { $ref: 'services.yaml#/schemas/ServiceSettingsSource' }
@@ -243,6 +243,9 @@ components:
               oneOf:
                 - $ref: '#/components/schemas/ServicePricing'
                 - type: "null"
+        volumes:
+          type: array
+          items: { $ref: 'services.yaml#/schemas/ServiceSettingsVolume' }
         volumeLimits:
           type: object
           required: [minGb, maxGb, removedRetentionDays]
@@ -379,6 +382,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ServiceSettings' }
         default: { $ref: '#/components/responses/Error' }
+  /api/cloud/services/{serviceId}/volumes: { $ref: 'services.yaml#/paths/volumes' }
   /api/cloud/services/{serviceId}/port: { $ref: 'services.yaml#/paths/port' }
   /api/cloud/services/{serviceId}/network: { $ref: 'services.yaml#/paths/network' }
   /api/cloud/services/{serviceId}/source: { $ref: 'services.yaml#/paths/source' }

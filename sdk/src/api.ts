@@ -37,6 +37,8 @@ export type NewRepositoryService = NewService & {
 };
 /** Where a service's deployments come from, as `setServiceSource` writes it. */
 export type ServiceSource = components["schemas"]["ServiceSource"];
+/** A persistent volume to attach to a service: its name, mount path and size in GiB. */
+export type ServiceVolume = components["schemas"]["ServiceVolume"];
 export type VariableOrigin = components["schemas"]["VariableOrigin"];
 export type VariableWrite = components["schemas"]["VariableWrite"];
 export type WorkspaceProvisioning =
@@ -290,6 +292,26 @@ export class CloudApi {
       { params: { path: { serviceId } } },
     );
     return dataOf(result);
+  }
+
+  /**
+   * Attaches a persistent volume to a service that has none; a service holds
+   * one. The service is pinned to one replica, and a deployed service is
+   * redeployed with the volume mounted. Refused with
+   * `cloud.errors.settings.invalid_volume` (400) for a name, path or size out
+   * of range, with `cloud.errors.settings.volume_already_attached` (409) when
+   * it already has one, and with a `cloud.errors.limits.*` code (409) past the
+   * plan's volume count or size.
+   */
+  async attachServiceVolume(
+    serviceId: string,
+    volume: ServiceVolume,
+  ): Promise<void> {
+    const result = await this.client.POST(
+      "/api/cloud/services/{serviceId}/volumes",
+      { params: { path: { serviceId } }, body: volume, parseAs: "text" },
+    );
+    acceptedOf(result);
   }
 
   /**

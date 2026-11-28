@@ -363,6 +363,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cloud/services/{serviceId}/volumes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Attaches a persistent volume to a service that has none: a service holds one volume. The
+         *     service is pinned to one replica, and a deployed service is redeployed with the volume
+         *     mounted.
+         */
+        post: operations["attachServiceVolume"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cloud/services/{serviceId}/port": {
         parameters: {
             query?: never;
@@ -909,6 +930,7 @@ export interface components {
                 replicaLimit: number;
                 pricing: components["schemas"]["ServicePricing"] | null;
             };
+            volumes: components["schemas"]["ServiceSettingsVolume"][];
             volumeLimits: {
                 minGb: number;
                 maxGb: number;
@@ -1326,6 +1348,20 @@ export interface components {
              *     an API older than this field.
              */
             maintenanceWindow?: components["schemas"]["ServiceSettingsMaintenanceWindow"];
+        };
+        /** @description A persistent volume a service mounts. */
+        ServiceVolume: {
+            /** @description A lowercase DNS label of at most 63 characters. */
+            name: string;
+            /** @description The normalized absolute path the container mounts the volume at. */
+            mountPath: string;
+            /** @description The size in whole GiB, from the `volumeLimits` of the service's settings; the plan's own ceiling applies on top. */
+            sizeGb: number;
+        };
+        /** @description A volume of a service, with the space it uses. */
+        ServiceSettingsVolume: components["schemas"]["ServiceVolume"] & {
+            /** @description The space consumed, in GiB; null when the platform could not measure it. */
+            usedGb: number | null;
         };
         /** @description The window in force for a managed database, and when it next opens. */
         MaintenanceWindowView: {
@@ -2027,6 +2063,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceSettings"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    attachServiceVolume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceVolume"];
+            };
+        };
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cloud.errors.settings.invalid_volume`: the name is not a lowercase DNS label, the mount path is not a normalized absolute path, or the size is not a whole number of GiB within the volume limits. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.volume_already_attached`: the service already has a volume. `cloud.errors.limits.volumes_per_workspace`: the workspace holds as many volumes as its plan allows. `cloud.errors.limits.volume_size_bytes`: the size is over the plan's ceiling for one volume. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
             default: components["responses"]["Error"];
