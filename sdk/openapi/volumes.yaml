@@ -56,7 +56,7 @@ paths:
             application/json:
               schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
         '409':
-          description: '`cloud.errors.settings.volume_already_attached`: the service already has a volume. `cloud.errors.limits.volumes_per_workspace`: the workspace holds as many volumes as its plan allows. `cloud.errors.limits.volume_size_bytes`: the size is over the plan''s ceiling for one volume. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
+          description: '`cloud.errors.settings.volume_already_attached`: the service already has a volume. `cloud.errors.limits.volumes_per_workspace`: the workspace holds as many volumes as its plan allows. `cloud.errors.limits.volume_size_bytes`: the size is over the plan''s ceiling for one volume. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. `cloud.errors.settings.primitive_owned_setting`: the service is a managed database, whose volume its primitive owns. `cloud.errors.settings.tier.<limit>`: the service pinned to one replica with the volume does not fit the workspace''s tier. `cloud.errors.settings.concurrent_edit`: another change to the service holds it, or the service was removed meanwhile; retry. `cloud.errors.deploy.deployment_in_progress`: a deployment of the service holds it; retry once it settles.'
           content:
             application/json:
               schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }

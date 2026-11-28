@@ -195,7 +195,7 @@ describe("the settings of a database", () => {
         replicaLimit: 1,
         pricing: null,
       },
-      volumeLimits: { minGb: 1, maxGb: 10, removedRetentionDays: 7 },
+      volumeLimits: { minGb: 1, maxGb: 10 },
       database: withDatabase,
     });
     const answers = [
