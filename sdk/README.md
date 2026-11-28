@@ -165,6 +165,11 @@ await api.setServiceExposure(serviceId, true); // false closes it again
 `attachServiceVolume` gives a service that has none a persistent volume, and `serviceSettings(serviceId)` lists the volumes a service has with the space each uses (`usedGb` is null when it could not be measured). A service holds one volume, and the service runs on one replica once it has one:
 
 ```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const serviceId = "…";
+
 await api.attachServiceVolume(serviceId, {
   name: "data",
   mountPath: "/data",
