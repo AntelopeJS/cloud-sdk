@@ -245,7 +245,7 @@ components:
                 - type: "null"
         volumes:
           type: array
-          items: { $ref: 'services.yaml#/schemas/ServiceSettingsVolume' }
+          items: { $ref: 'volumes.yaml#/schemas/ServiceSettingsVolume' }
         volumeLimits:
           type: object
           required: [minGb, maxGb, removedRetentionDays]
@@ -382,7 +382,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ServiceSettings' }
         default: { $ref: '#/components/responses/Error' }
-  /api/cloud/services/{serviceId}/volumes: { $ref: 'services.yaml#/paths/volumes' }
+  /api/cloud/services/{serviceId}/volumes: { $ref: 'volumes.yaml#/paths/volumes' }
   /api/cloud/services/{serviceId}/port: { $ref: 'services.yaml#/paths/port' }
   /api/cloud/services/{serviceId}/network: { $ref: 'services.yaml#/paths/network' }
   /api/cloud/services/{serviceId}/source: { $ref: 'services.yaml#/paths/source' }

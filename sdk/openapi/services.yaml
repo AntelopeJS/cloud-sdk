@@ -1,33 +1,4 @@
 schemas:
-  ServiceVolume:
-    description: A persistent volume a service mounts.
-    type: object
-    required: [name, mountPath, sizeGb]
-    properties:
-      name:
-        description: A lowercase DNS label of at most 63 characters.
-        type: string
-        minLength: 1
-        maxLength: 63
-        pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
-      mountPath:
-        description: The normalized absolute path the container mounts the volume at.
-        type: string
-        maxLength: 4096
-      sizeGb:
-        description: The size in whole GiB, from the `volumeLimits` of the service's settings; the plan's own ceiling applies on top.
-        type: integer
-        minimum: 1
-  ServiceSettingsVolume:
-    description: A volume of a service, with the space it uses.
-    allOf:
-      - $ref: '#/schemas/ServiceVolume'
-      - type: object
-        required: [usedGb]
-        properties:
-          usedGb:
-            description: The space consumed, in GiB; null when the platform could not measure it.
-            type: [number, "null"]
   NewService:
     description: |
       A service to create in an environment. Its source says where its deployments come
@@ -127,38 +98,6 @@ schemas:
         type: array
         items: { type: string }
 paths:
-  volumes:
-    post:
-      operationId: attachServiceVolume
-      description: |
-        Attaches a persistent volume to a service that has none: a service holds one volume. The
-        service is pinned to one replica, and a deployed service is redeployed with the volume
-        mounted.
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - in: path
-          name: serviceId
-          required: true
-          schema: { type: string }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/schemas/ServiceVolume' }
-      responses:
-        '200':
-          description: Done
-        '400':
-          description: '`cloud.errors.settings.invalid_volume`: the name is not a lowercase DNS label, the mount path is not a normalized absolute path, or the size is not a whole number of GiB within the volume limits.'
-          content:
-            application/json:
-              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
-        '409':
-          description: '`cloud.errors.settings.volume_already_attached`: the service already has a volume. `cloud.errors.limits.volumes_per_workspace`: the workspace holds as many volumes as its plan allows. `cloud.errors.limits.volume_size_bytes`: the size is over the plan''s ceiling for one volume. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
-          content:
-            application/json:
-              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
-        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
   port:
     put:
       operationId: setServicePort
