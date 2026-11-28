@@ -501,6 +501,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cloud/services/{serviceId}/maintenance-window": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The window in force for a managed database: the one its workspace's owner chose, or
+         *     the platform's default, when it next opens, and whether the caller may change it.
+         */
+        get: operations["readMaintenanceWindow"];
+        /**
+         * @description Chooses the window the platform applies the database's held-back updates in. The
+         *     workspace's owner only, on a paid plan. A setting of the console alone: nothing is
+         *     redeployed, and the next opening of the new window is the first one the platform
+         *     uses.
+         */
+        put: operations["setMaintenanceWindow"];
+        post?: never;
+        /**
+         * @description Drops the window the owner chose: the platform's default applies to the database
+         *     again. The workspace's owner only, on a paid plan.
+         */
+        delete: operations["resetMaintenanceWindow"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cloud/services/{serviceId}/variables/references": {
         parameters: {
             query?: never;
@@ -872,6 +902,8 @@ export interface components {
         ServiceSettings: {
             serviceId: string;
             source?: components["schemas"]["ServiceSettingsSource"];
+            /** @description The managed database's own facts; null for every other service. */
+            database?: components["schemas"]["ServiceSettingsDatabase"] | null;
             scaling: {
                 bounds: components["schemas"]["ServiceBounds"];
                 replicaLimit: number;
@@ -1246,6 +1278,78 @@ export interface components {
             rootPath?: string | null;
             /** @description The paths outside the root folder a push rebuilds a repository service for; empty for every other source. Absent from an API older than this field. */
             sharedPaths?: string[];
+        };
+        /**
+         * @description The day of the week a maintenance window opens on, in its time zone.
+         * @enum {string}
+         */
+        MaintenanceWindowDay: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+        /**
+         * @description The weekly slot in which the platform may restart a managed database to apply an
+         *     update it holds back: a day, a start hour and a duration in whole hours, read on the
+         *     wall clock of a named time zone, so the window stays at the same hour through summer
+         *     time. A window may run past midnight into the next day. The platform applies an
+         *     update inside the window only; one pending for 14 days is applied at the next opening
+         *     even if the database does not read healthy.
+         */
+        MaintenanceWindow: {
+            day: components["schemas"]["MaintenanceWindowDay"];
+            /** @description The hour the window opens, 0 to 23, in `timeZone`. */
+            startHour: number;
+            /** @description How long the window stays open, 1 to 4 whole hours. */
+            durationHours: number;
+            /**
+             * @description The IANA time zone the day and the hour are read in, such as `Europe/Brussels`.
+             *     A name the API's runtime does not know is refused with
+             *     `cloud.errors.settings.unknown_time_zone`.
+             */
+            timeZone: string;
+        };
+        /** @description The window in force for a managed database, and whether it is the platform's default. */
+        ServiceSettingsMaintenanceWindow: components["schemas"]["MaintenanceWindow"] & {
+            isDefault: boolean;
+        };
+        /** @description A managed database's own facts, as its settings show them. */
+        ServiceSettingsDatabase: {
+            engine: components["schemas"]["DatabaseEngine"];
+            mode: components["schemas"]["DatabaseMode"];
+            label: string;
+            version: string;
+            /** @description The host the services that reference the database reach it at, inside the cluster. */
+            host: string;
+            /** @description Whether anything was ever delivered for the database. */
+            isDeployed?: boolean;
+            /** @description Days a retired database keeps its data and can be brought back. */
+            retentionDays?: number;
+            /**
+             * @description When the platform applies the updates it holds back for the database. Absent from
+             *     an API older than this field.
+             */
+            maintenanceWindow?: components["schemas"]["ServiceSettingsMaintenanceWindow"];
+        };
+        /** @description The window in force for a managed database, and when it next opens. */
+        MaintenanceWindowView: {
+            window: components["schemas"]["MaintenanceWindow"];
+            /**
+             * @description True when the owner chose no window and the platform's default applies: Sunday
+             *     02:00 to 05:00, Europe/Brussels.
+             */
+            isDefault: boolean;
+            /**
+             * Format: date-time
+             * @description The opening in progress, or the next one.
+             */
+            nextStart: string;
+            /**
+             * Format: date-time
+             * @description The first instant that opening is closed again.
+             */
+            nextEnd: string;
+            /**
+             * @description Whether the caller may choose the window: the workspace's owner, on a paid plan.
+             *     A workspace on Free runs the default.
+             */
+            canEdit: boolean;
         };
         /** @description What a built revision was built from. */
         RevisionBuild: {
@@ -2187,6 +2291,147 @@ export interface operations {
                 };
             };
             /** @description `cloud.errors.settings.not_a_repository_source`: the service does not build a repository. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    readMaintenanceWindow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The window in force */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceWindowView"];
+                };
+            };
+            /** @description `cloud.errors.settings.unknown_service`: no service by that id the caller manages, or one that is not a managed database. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setMaintenanceWindow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaintenanceWindow"];
+            };
+        };
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cloud.errors.settings.invalid_maintenance_window`: not a day of the week, a start hour from 0 to 23 and a duration from 1 to 4 hours. `cloud.errors.settings.unknown_time_zone`: the API knows no time zone by that name. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.maintenance_window_owner_only`: the caller manages the database but does not own the workspace. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.unknown_service`: no service by that id the caller manages, or one that is not a managed database. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.maintenance_window_plan_locked`: the workspace's plan runs the platform's default window only. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    resetMaintenanceWindow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cloud.errors.settings.maintenance_window_owner_only`: the caller manages the database but does not own the workspace. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.unknown_service`: no service by that id the caller manages, or one that is not a managed database. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.maintenance_window_plan_locked`: the workspace's plan runs the platform's default window only. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
             409: {
                 headers: {
                     [name: string]: unknown;

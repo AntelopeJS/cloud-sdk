@@ -211,6 +211,30 @@ await api.setVariable(projectId, environmentId, serviceId, "NEXT_PUBLIC_SITE_URL
 
 A write without `buildTime` keeps the mark a held variable has. Every listed variable carries `buildTime` (false for secrets and wired variables); an API older than the field leaves it out. The name is upper case (`^[A-Z_][A-Z0-9_]*$`) and not one the build reserves (`BUILD_COMMAND`, `NODE_ENV`, `ANTELOPEJS_LAUNCH_ENV`, `BUILD_DATE`, `VCS_REF`, `VERSION`, `BUILDKIT_*` and the proxy names `HTTP_PROXY`, `HTTPS_PROXY`, `FTP_PROXY`, `NO_PROXY`, `ALL_PROXY`), else `cloud.errors.settings.entry.build_time_name`; the value is one line of at most 1024 characters without control characters, else `cloud.errors.settings.entry.build_time_value`. A service marks at most 32 variables, 64 KiB encoded in all: `cloud.errors.settings.build_time_limit` beyond.
 
+## Maintenance window of a database
+
+The platform holds back the updates of a managed database (engine and operator releases, security fixes) and restarts it to apply them inside its maintenance window only: one weekly slot, a day, a start hour and a duration of 1 to 4 hours, read on the wall clock of an IANA time zone, so it stays at the same hour through summer time. A database whose owner chose none runs the platform's default, Sunday 02:00 to 05:00 in `Europe/Brussels`. An update that waited 14 days is applied at the next opening even if the database does not read healthy. `api.maintenanceWindows` reads, chooses and resets the window of a database, by its service id:
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const serviceId = "…"; // a managed database
+
+const { window, isDefault, nextStart, nextEnd, canEdit } = await api.maintenanceWindows.read(serviceId);
+console.log(window, isDefault, `next: ${nextStart} to ${nextEnd}`, canEdit);
+
+await api.maintenanceWindows.set(serviceId, {
+  day: "tuesday", // MAINTENANCE_WINDOW_DAYS lists them, Monday first
+  startHour: 1, // 0 to 23
+  durationHours: 2, // 1 to 4
+  timeZone: "Europe/Paris",
+});
+await api.maintenanceWindows.reset(serviceId); // back to the platform's default
+```
+
+`nextStart` and `nextEnd` are the opening in progress, or the next one, as ISO 8601 instants. Only the workspace's owner chooses, on a paid plan: `canEdit` says whether the caller may, a member is refused with `cloud.errors.settings.maintenance_window_owner_only` (403) and a workspace on Free with `cloud.errors.settings.maintenance_window_plan_locked` (409). A window outside the bounds is refused with `cloud.errors.settings.invalid_maintenance_window`, a zone the API does not know with `cloud.errors.settings.unknown_time_zone` (400), and a service that is not a managed database with `cloud.errors.settings.unknown_service` (404). Choosing a window redeploys nothing. `serviceSettings` reads the window in force too, as `database.maintenanceWindow` with its `isDefault`; an API older than the field leaves it out.
+
 ## List a project's deployments
 
 `api.projectDeployments.list` returns one page of deployments across all environments, newest first. Follow `nextCursor` while it is not `null`, with the same filters:

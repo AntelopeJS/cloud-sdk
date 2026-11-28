@@ -228,6 +228,11 @@ components:
       properties:
         serviceId: { type: string }
         source: { $ref: 'services.yaml#/schemas/ServiceSettingsSource' }
+        database:
+          description: The managed database's own facts; null for every other service.
+          oneOf:
+            - $ref: 'maintenance.yaml#/schemas/ServiceSettingsDatabase'
+            - type: "null"
         scaling:
           type: object
           required: [bounds, replicaLimit, pricing]
@@ -380,6 +385,7 @@ paths:
   /api/cloud/services/{serviceId}/source-dockerfile: { $ref: 'services.yaml#/paths/sourceDockerfile' }
   /api/cloud/services/{serviceId}/source-root-path: { $ref: 'services.yaml#/paths/sourceRootPath' }
   /api/cloud/services/{serviceId}/source-shared-paths: { $ref: 'services.yaml#/paths/sourceSharedPaths' }
+  /api/cloud/services/{serviceId}/maintenance-window: { $ref: 'maintenance.yaml#/paths/maintenanceWindow' }
   /api/cloud/services/{serviceId}/variables/references: { $ref: 'services.yaml#/paths/variableReferences' }
   /api/cloud/services/{serviceId}/source-deployments:
     post:

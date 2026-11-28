@@ -39,6 +39,11 @@ import type {
 export { deploy } from "./deploy.js";
 export { envList, envSet, envUnset } from "./env.js";
 export { logs } from "./logs.js";
+export {
+  maintenanceReset,
+  maintenanceSet,
+  maintenanceShow,
+} from "./maintenance.js";
 export { status } from "./status.js";
 
 const DEFAULT_SERVICES = ["api=apps/api", "app=apps/app"];

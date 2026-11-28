@@ -6,6 +6,7 @@ import { EnvironmentsApi, ProjectRepositoryApi } from "./environments.js";
 import type { components, paths } from "./generated/cloud-api.js";
 import { isRecord, isString } from "./guards.js";
 import { type BuildLogRequest, type LogRequest, logReadOf } from "./logs.js";
+import { MaintenanceWindowsApi } from "./maintenance.js";
 import {
   acceptedOf,
   dataOf,
@@ -96,6 +97,8 @@ export class CloudApi {
   readonly projectRepository: ProjectRepositoryApi;
   /** Every deployment of a project, newest first, one page at a time. */
   readonly projectDeployments: ProjectDeploymentsApi;
+  /** The weekly slot each managed database takes the platform's updates in. */
+  readonly maintenanceWindows: MaintenanceWindowsApi;
 
   constructor(private readonly options: CloudApiOptions) {
     this.baseUrl = (options.baseUrl ?? DEFAULT_API_URL).replace(/\/+$/, "");
@@ -108,6 +111,7 @@ export class CloudApi {
     this.environments = new EnvironmentsApi(this.client);
     this.projectRepository = new ProjectRepositoryApi(this.client);
     this.projectDeployments = new ProjectDeploymentsApi(this.client);
+    this.maintenanceWindows = new MaintenanceWindowsApi(this.client);
   }
 
   async listProjects() {

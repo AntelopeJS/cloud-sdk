@@ -1,0 +1,186 @@
+schemas:
+  MaintenanceWindowDay:
+    description: The day of the week a maintenance window opens on, in its time zone.
+    type: string
+    enum: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+  MaintenanceWindow:
+    description: |
+      The weekly slot in which the platform may restart a managed database to apply an
+      update it holds back: a day, a start hour and a duration in whole hours, read on the
+      wall clock of a named time zone, so the window stays at the same hour through summer
+      time. A window may run past midnight into the next day. The platform applies an
+      update inside the window only; one pending for 14 days is applied at the next opening
+      even if the database does not read healthy.
+    type: object
+    required: [day, startHour, durationHours, timeZone]
+    properties:
+      day: { $ref: '#/schemas/MaintenanceWindowDay' }
+      startHour:
+        description: The hour the window opens, 0 to 23, in `timeZone`.
+        type: integer
+        minimum: 0
+        maximum: 23
+      durationHours:
+        description: How long the window stays open, 1 to 4 whole hours.
+        type: integer
+        minimum: 1
+        maximum: 4
+      timeZone:
+        description: |
+          The IANA time zone the day and the hour are read in, such as `Europe/Brussels`.
+          A name the API's runtime does not know is refused with
+          `cloud.errors.settings.unknown_time_zone`.
+        type: string
+        minLength: 1
+  MaintenanceWindowView:
+    description: The window in force for a managed database, and when it next opens.
+    type: object
+    required: [window, isDefault, nextStart, nextEnd, canEdit]
+    properties:
+      window: { $ref: '#/schemas/MaintenanceWindow' }
+      isDefault:
+        description: |
+          True when the owner chose no window and the platform's default applies: Sunday
+          02:00 to 05:00, Europe/Brussels.
+        type: boolean
+      nextStart:
+        description: The opening in progress, or the next one.
+        type: string
+        format: date-time
+      nextEnd:
+        description: The first instant that opening is closed again.
+        type: string
+        format: date-time
+      canEdit:
+        description: |
+          Whether the caller may choose the window: the workspace's owner, on a paid plan.
+          A workspace on Free runs the default.
+        type: boolean
+  ServiceSettingsMaintenanceWindow:
+    description: The window in force for a managed database, and whether it is the platform's default.
+    allOf:
+      - $ref: '#/schemas/MaintenanceWindow'
+      - type: object
+        required: [isDefault]
+        properties:
+          isDefault: { type: boolean }
+  ServiceSettingsDatabase:
+    description: A managed database's own facts, as its settings show them.
+    type: object
+    required: [engine, mode, label, version, host]
+    properties:
+      engine: { $ref: './resources.openapi.yaml#/components/schemas/DatabaseEngine' }
+      mode: { $ref: './resources.openapi.yaml#/components/schemas/DatabaseMode' }
+      label: { type: string }
+      version: { type: string }
+      host:
+        description: The host the services that reference the database reach it at, inside the cluster.
+        type: string
+      isDeployed:
+        description: Whether anything was ever delivered for the database.
+        type: boolean
+      retentionDays:
+        description: Days a retired database keeps its data and can be brought back.
+        type: integer
+      maintenanceWindow:
+        description: |
+          When the platform applies the updates it holds back for the database. Absent from
+          an API older than this field.
+        $ref: '#/schemas/ServiceSettingsMaintenanceWindow'
+paths:
+  maintenanceWindow:
+    get:
+      operationId: readMaintenanceWindow
+      description: |
+        The window in force for a managed database: the one its workspace's owner chose, or
+        the platform's default, when it next opens, and whether the caller may change it.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The window in force
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/MaintenanceWindowView' }
+        '404':
+          description: '`cloud.errors.settings.unknown_service`: no service by that id the caller manages, or one that is not a managed database.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+    put:
+      operationId: setMaintenanceWindow
+      description: |
+        Chooses the window the platform applies the database's held-back updates in. The
+        workspace's owner only, on a paid plan. A setting of the console alone: nothing is
+        redeployed, and the next opening of the new window is the first one the platform
+        uses.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/MaintenanceWindow' }
+      responses:
+        '200':
+          description: Done
+        '400':
+          description: '`cloud.errors.settings.invalid_maintenance_window`: not a day of the week, a start hour from 0 to 23 and a duration from 1 to 4 hours. `cloud.errors.settings.unknown_time_zone`: the API knows no time zone by that name.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '403':
+          description: '`cloud.errors.settings.maintenance_window_owner_only`: the caller manages the database but does not own the workspace.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '404':
+          description: '`cloud.errors.settings.unknown_service`: no service by that id the caller manages, or one that is not a managed database.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '409':
+          description: '`cloud.errors.settings.maintenance_window_plan_locked`: the workspace''s plan runs the platform''s default window only. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+    delete:
+      operationId: resetMaintenanceWindow
+      description: |
+        Drops the window the owner chose: the platform's default applies to the database
+        again. The workspace's owner only, on a paid plan.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Done
+        '403':
+          description: '`cloud.errors.settings.maintenance_window_owner_only`: the caller manages the database but does not own the workspace.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '404':
+          description: '`cloud.errors.settings.unknown_service`: no service by that id the caller manages, or one that is not a managed database.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '409':
+          description: '`cloud.errors.settings.maintenance_window_plan_locked`: the workspace''s plan runs the platform''s default window only. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
