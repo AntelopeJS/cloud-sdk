@@ -325,7 +325,7 @@ README and `package.json`.
 
 | Package                 | Supported | Tested with |
 | ----------------------- | --------- | ----------- |
-| `@antelopejs/cloud-sdk` | `^0.1.7`  | `0.1.7`     |
+| `@antelopejs/cloud-sdk` | `^0.1.8`  | `0.1.8`     |
 | `@antelopejs/core`      | `~1.24.0` | `1.24.9`    |
 
 <!-- antelopejs-docs-compat:end -->
