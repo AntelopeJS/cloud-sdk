@@ -1,6 +1,32 @@
 # Changelog
 
 
+## v0.2.2
+
+[compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-cli-v0.2.1...cloud-cli-v0.2.2)
+
+### 🚀 Enhancements
+
+- **sdk:** Name the root folder and shared paths of a repository service in the spec, the SDK and the CLI (ANT-745) ([#47](https://github.com/AntelopeJS/cloud-sdk/pull/47))
+- **sdk:** Name the build-time mark of a variable in the spec, the SDK and an env command of the CLI (ANT-746) ([#49](https://github.com/AntelopeJS/cloud-sdk/pull/49))
+
+### 📦 Build
+
+- **deps:** Move @antelopejs/tooling-configs to 0.10.14 and sync ([#48](https://github.com/AntelopeJS/cloud-sdk/pull/48))
+
+### 🏡 Chore
+
+- **deps:** Move to tooling-configs 0.10.7 and pnpm 10.34.9 with a 24h release age ([#41](https://github.com/AntelopeJS/cloud-sdk/pull/41))
+- **deps:** Update antelopejs tooling configs ([#42](https://github.com/AntelopeJS/cloud-sdk/pull/42))
+- **deps:** Update dependency @antelopejs/core to v1.24.8 ([#37](https://github.com/AntelopeJS/cloud-sdk/pull/37))
+- **ci:** Bring CI to the org conventions with tooling-configs 0.10.12 and a verification skill ([#44](https://github.com/AntelopeJS/cloud-sdk/pull/44))
+- **deps:** Update dependency @antelopejs/core to v1.24.9 ([#45](https://github.com/AntelopeJS/cloud-sdk/pull/45))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+- dada-sudo
+
 ## v0.2.1
 
 [compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-cli-v0.2.0...cloud-cli-v0.2.1)
