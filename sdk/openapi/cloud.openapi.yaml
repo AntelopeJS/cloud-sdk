@@ -376,7 +376,10 @@ paths:
         default: { $ref: '#/components/responses/Error' }
   /api/cloud/services/{serviceId}/port: { $ref: 'services.yaml#/paths/port' }
   /api/cloud/services/{serviceId}/network: { $ref: 'services.yaml#/paths/network' }
+  /api/cloud/services/{serviceId}/source: { $ref: 'services.yaml#/paths/source' }
   /api/cloud/services/{serviceId}/source-dockerfile: { $ref: 'services.yaml#/paths/sourceDockerfile' }
+  /api/cloud/services/{serviceId}/source-root-path: { $ref: 'services.yaml#/paths/sourceRootPath' }
+  /api/cloud/services/{serviceId}/source-shared-paths: { $ref: 'services.yaml#/paths/sourceSharedPaths' }
   /api/cloud/services/{serviceId}/variables/references: { $ref: 'services.yaml#/paths/variableReferences' }
   /api/cloud/services/{serviceId}/source-deployments:
     post:

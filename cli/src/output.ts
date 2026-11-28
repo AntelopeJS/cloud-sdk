@@ -45,6 +45,8 @@ interface CliRecords {
   };
   logout: { wasLoggedIn: boolean };
   project_linked: ProjectConfig;
+  service_root_set: { service: string; rootPath: string };
+  service_shared_paths_set: { service: string; sharedPaths: string[] };
   project_not_linked: { cwd: string };
   project_created: ApiResult<"createProject">;
   service_created: ApiResult<"createService">;

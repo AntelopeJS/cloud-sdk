@@ -5,7 +5,11 @@ import {
   isValidProjectSlug,
   isValidServiceName,
 } from "./naming.js";
-import { parseServicePaths, withServiceDockerfiles } from "./project.js";
+import {
+  parseServiceLayouts,
+  parseServicePaths,
+  withServiceDockerfiles,
+} from "./project.js";
 import type {
   DeployOptions,
   EnvSetOptions,
@@ -104,8 +108,7 @@ export function validateEnvArguments(
 }
 
 export function validateLinkOptions(options: LinkOptions): void {
-  withServiceDockerfiles(
-    parseServicePaths(options.service),
-    options.dockerfile,
-  );
+  const services = parseServicePaths(options.service);
+  withServiceDockerfiles(services, options.dockerfile);
+  parseServiceLayouts(services, options.root, options.shared);
 }

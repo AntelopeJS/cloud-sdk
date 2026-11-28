@@ -12,6 +12,8 @@ const REGLE_NOM_BUILD =
   "Une variable de build se nomme en majuscules ([A-Z_][A-Z0-9_]*) et n’est pas un nom que le build réserve : BUILD_COMMAND, NODE_ENV, ANTELOPEJS_LAUNCH_ENV, BUILD_DATE, VCS_REF, VERSION, BUILDKIT_* et les noms de proxy (HTTP_PROXY, HTTPS_PROXY, FTP_PROXY, NO_PROXY, ALL_PROXY).";
 const REGLE_VALEUR_BUILD =
   "Une valeur de build tient sur une ligne de 1024 caractères au plus, sans caractère de contrôle.";
+const REGLE_CHEMIN_DEPOT =
+  "Le chemin est relatif au dépôt : lettres, chiffres, points, tirets et tirets bas, séparés par une barre oblique, 255 caractères au plus.";
 
 export const FR: ProblemTexts = {
   not_authenticated: {
@@ -103,6 +105,16 @@ export const FR: ProblemTexts = {
     title: "La valeur de {detail} ne peut pas être un argument de build",
     reason: REGLE_VALEUR_BUILD,
     fixes: ["Ramenez-la à une ligne, ou définissez-la sans --build-time"],
+  },
+  invalid_service_root: {
+    title: "Valeur --root invalide « {detail} »",
+    reason: `Un dossier racine se donne une fois sous la forme <service>=<dossier>, pour un service que --service associe. ${REGLE_CHEMIN_DEPOT}`,
+    fixes: ["Passez-le ainsi : --root web=apps/web"],
+  },
+  invalid_service_shared_path: {
+    title: "Valeur --shared invalide « {detail} »",
+    reason: `Un chemin partagé se donne sous la forme <service>=<chemin>, pour un service que --service associe, 20 par service au plus. ${REGLE_CHEMIN_DEPOT}`,
+    fixes: ["Passez-le ainsi : --shared web=packages/ui"],
   },
   service_path_outside_project: {
     title: "Le chemin de service « {detail} » est hors du dossier du projet",
@@ -274,6 +286,25 @@ export const FR: ProblemTexts = {
   "api.serviceNameTaken": {
     title: "Un service porte déjà ce nom",
     fixes: ["Nommez le service autrement"],
+  },
+  "api.invalidRootPath": {
+    title: "Le dossier racine n’est pas un dossier du dépôt",
+    reason: REGLE_CHEMIN_DEPOT,
+    fixes: ["Passez-le ainsi : --root web=apps/web"],
+  },
+  "api.invalidSharedPaths": {
+    title: "Un chemin partagé n’est pas un chemin du dépôt",
+    reason: `${REGLE_CHEMIN_DEPOT} Un service surveille au plus 20 chemins partagés.`,
+    fixes: ["Passez chacun ainsi : --shared web=packages/ui"],
+  },
+  "api.notARepositorySource": {
+    title: "Ce service ne construit pas de dépôt",
+    reason:
+      "--root et --shared configurent un service construit depuis un dépôt GitHub ; un service envoyé construit le dossier qu’ajs-cloud deploy empaquette.",
+    fixes: [
+      "Associez le service sans --root ni --shared",
+      "Ou pointez-le d’abord vers un dépôt dans la console",
+    ],
   },
   "api.unbuildable": {
     title: "Ce dossier ne peut pas être construit",

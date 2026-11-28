@@ -42,6 +42,8 @@ const USAGE_CODES = new Set([
   "invalid_variable_assignment",
   "invalid_build_time_name",
   "invalid_build_time_value",
+  "invalid_service_root",
+  "invalid_service_shared_path",
   "service_path_outside_project",
   "unknown_region",
 ]);
@@ -55,6 +57,9 @@ const API_PROBLEMS = new Map<string, string>([
   ["cloud.errors.limits.hostnames_per_tenant", "api.hostnameLimit"],
   ["cloud.errors.settings.invalid_service_name", "api.invalidServiceName"],
   ["cloud.errors.settings.service_name_taken", "api.serviceNameTaken"],
+  ["cloud.errors.settings.invalid_root_path", "api.invalidRootPath"],
+  ["cloud.errors.settings.invalid_shared_paths", "api.invalidSharedPaths"],
+  ["cloud.errors.settings.not_a_repository_source", "api.notARepositorySource"],
   ["cloud.errors.builds.unsupported_source_archive", "api.unreadableSource"],
   ["cloud.errors.builds.no_build_recipe", "api.unbuildable"],
   ["cloud.errors.builds.missing_start_script", "api.missingStartScript"],

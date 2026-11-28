@@ -1,4 +1,5 @@
 import {
+  type CloudApi,
   CloudApiError,
   DEFAULT_API_URL,
   type DeviceAuthorization,
@@ -18,6 +19,7 @@ import { isNetworkFailure } from "./network.js";
 import { feedback, record, result } from "./output.js";
 import {
   type Project,
+  parseServiceLayouts,
   parseServicePaths,
   productionServices,
   publicUrl,
@@ -31,6 +33,7 @@ import type {
   LinkOptions,
   ProjectConfig,
   Runtime,
+  ServiceLayout,
 } from "./types.js";
 
 export { deploy } from "./deploy.js";
@@ -290,6 +293,47 @@ function assertLinkableServices(
   });
 }
 
+/**
+ * Sets each layout on its service, before the folder is linked: a refusal,
+ * such as a service that builds no repository, leaves the folder as it was.
+ * The root folder goes first, since the shared paths are read under it.
+ */
+async function applyServiceLayouts(
+  runtime: Runtime,
+  options: GlobalOptions,
+  api: CloudApi,
+  project: Project,
+  layouts: ReadonlyMap<string, ServiceLayout>,
+): Promise<void> {
+  for (const [name, layout] of layouts) {
+    const service = serviceByName(project, name);
+    if (layout.rootPath !== undefined) {
+      await api.setServiceRootPath(service.id, layout.rootPath);
+      feedback(runtime, options, {
+        type: "service_root_set",
+        data: { service: name, rootPath: layout.rootPath },
+        level: "success",
+        text: format("rootFolderSet", options.lang, {
+          service: name,
+          folder: layout.rootPath,
+        }),
+      });
+    }
+    if (layout.sharedPaths !== undefined) {
+      await api.setServiceSharedPaths(service.id, layout.sharedPaths);
+      feedback(runtime, options, {
+        type: "service_shared_paths_set",
+        data: { service: name, sharedPaths: layout.sharedPaths },
+        level: "success",
+        text: format("sharedPathsSet", options.lang, {
+          service: name,
+          paths: layout.sharedPaths.join(", "),
+        }),
+      });
+    }
+  }
+}
+
 export async function link(
   runtime: Runtime,
   options: GlobalOptions,
@@ -313,8 +357,14 @@ export async function link(
       linkOptions.dockerfile,
     ),
   };
+  const layouts = parseServiceLayouts(
+    config.services,
+    linkOptions.root,
+    linkOptions.shared,
+  );
   const detail = await api.readProject(project.id);
   assertLinkableServices(detail, Object.keys(config.services), options.lang);
+  await applyServiceLayouts(runtime, options, api, detail, layouts);
   await writeProjectConfig(runtime.cwd, config);
   feedback(runtime, options, {
     type: "project_linked",

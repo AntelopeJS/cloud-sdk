@@ -219,6 +219,18 @@ function linkCommand(runtime: Runtime): Command {
       collect,
       [],
     )
+    .option(
+      "--root <name=folder>",
+      "Build a repository service from this folder of its repository, instead of the repository root; set on the service when the folder is linked",
+      collect,
+      [],
+    )
+    .option(
+      "--shared <name=path>",
+      "Rebuild a repository service built from a folder when a push touches this path too, such as a shared package or the lockfile; repeat it for each path",
+      collect,
+      [],
+    )
     .action(
       async (project: string, linkOptions: LinkOptions, self: Command) => {
         const options = globals(self);
@@ -238,6 +250,12 @@ function linkCommand(runtime: Runtime): Command {
       description: "Build two services from the same folder",
       command:
         "ajs-cloud link my-project --service web=. --service frontend=. --dockerfile frontend=frontend.Dockerfile",
+    },
+    {
+      description:
+        "Build a repository service from one folder of a monorepo, rebuilt when a shared package changes",
+      command:
+        "ajs-cloud link my-project --service web=apps/web --root web=apps/web --shared web=packages/ui",
     },
   ]);
 }

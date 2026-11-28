@@ -31,6 +31,8 @@ interface MockState {
   serviceNames: string[] | null;
   /** The services each one links to, by id. */
   links: Record<string, string[]>;
+  /** The source settings written, as `<path> <body>`, in order. */
+  sourceWrites: string[];
 }
 
 interface BinaryResult {
@@ -48,7 +50,10 @@ export const state: MockState = {
   tokenPolls: 0,
   serviceNames: null,
   links: {},
+  sourceWrites: [],
 };
+/** A service of the fixture project that is not built from a repository. */
+const UPLOAD_SERVICE_ID = "service-worker";
 export let origin = "";
 const server = createServer(handleRequest);
 export let otherOrigin = "";
@@ -80,12 +85,36 @@ async function sourceDeployment(
   }
 }
 
+/**
+ * A source setting of a service, as the API answers it: refused for the
+ * service that builds no repository, recorded with its body otherwise.
+ */
+async function sourceSetting(
+  path: string,
+  request: IncomingMessage,
+  response: ServerResponse,
+): Promise<void> {
+  const body = (await buffer(request)).toString("utf8");
+  if (path.includes(`/${UPLOAD_SERVICE_ID}/`)) {
+    json(response, 409, "cloud.errors.settings.not_a_repository_source");
+    return;
+  }
+  state.sourceWrites.push(`${path} ${body}`);
+  response.writeHead(200);
+  response.end();
+}
+
 async function handleRequest(
   request: IncomingMessage,
   response: ServerResponse,
 ): Promise<void> {
   const path = request.url ?? "";
   state.requests.push(`${request.method} ${path}`);
+  if (
+    path.endsWith("/source-root-path") ||
+    path.endsWith("/source-shared-paths")
+  )
+    return sourceSetting(path, request, response);
   if (path === "/api/cloud/cli/device") return json(response, 200, device());
   if (path === "/api/cloud/cli/token") return token(response);
   if (path === "/api/cloud/projects/")

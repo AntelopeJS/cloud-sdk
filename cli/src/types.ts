@@ -53,6 +53,20 @@ export interface LogsOptions {
 export interface LinkOptions {
   service: string[];
   dockerfile: string[];
+  /** `<service>=<folder>`: the folder of its repository a service builds from. */
+  root: string[];
+  /** `<service>=<path>`: a path outside its root folder a push rebuilds a service for. */
+  shared: string[];
+}
+
+/**
+ * How a repository service builds, as `--root` and `--shared` name it: set
+ * on the service through the API when the folder is linked, never written to
+ * the project file, which only maps folders for uploads.
+ */
+export interface ServiceLayout {
+  rootPath?: string;
+  sharedPaths?: string[];
 }
 
 /** Options of `env set`. */

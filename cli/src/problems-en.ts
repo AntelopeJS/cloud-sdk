@@ -12,6 +12,8 @@ const BUILD_TIME_NAME_RULE =
   "A build-time variable is named in upper case ([A-Z_][A-Z0-9_]*) and is not a name the build reserves: BUILD_COMMAND, NODE_ENV, ANTELOPEJS_LAUNCH_ENV, BUILD_DATE, VCS_REF, VERSION, BUILDKIT_* and the proxy names (HTTP_PROXY, HTTPS_PROXY, FTP_PROXY, NO_PROXY, ALL_PROXY).";
 const BUILD_TIME_VALUE_RULE =
   "A build-time value is one line of at most 1024 characters, without control characters.";
+const REPOSITORY_PATH_RULE =
+  "The path is relative to the repository: letters, digits, dots, dashes and underscores, separated by a slash, 255 characters at most.";
 
 export const EN: ProblemTexts = {
   not_authenticated: {
@@ -100,6 +102,16 @@ export const EN: ProblemTexts = {
     title: "The value of {detail} cannot be a build argument",
     reason: BUILD_TIME_VALUE_RULE,
     fixes: ["Shorten it to one line, or set it without --build-time"],
+  },
+  invalid_service_root: {
+    title: 'Invalid --root value "{detail}"',
+    reason: `A root folder is given once as <service>=<folder>, for a service --service maps. ${REPOSITORY_PATH_RULE}`,
+    fixes: ["Pass it as --root web=apps/web"],
+  },
+  invalid_service_shared_path: {
+    title: 'Invalid --shared value "{detail}"',
+    reason: `A shared path is given as <service>=<path>, for a service --service maps, 20 per service at most. ${REPOSITORY_PATH_RULE}`,
+    fixes: ["Pass it as --shared web=packages/ui"],
   },
   service_path_outside_project: {
     title: 'The service path "{detail}" is outside the project folder',
@@ -268,6 +280,25 @@ export const EN: ProblemTexts = {
   "api.serviceNameTaken": {
     title: "A service with this name already exists",
     fixes: ["Name the service another way"],
+  },
+  "api.invalidRootPath": {
+    title: "The root folder is not a folder inside the repository",
+    reason: REPOSITORY_PATH_RULE,
+    fixes: ["Pass it as --root web=apps/web"],
+  },
+  "api.invalidSharedPaths": {
+    title: "A shared path is not a path inside the repository",
+    reason: `${REPOSITORY_PATH_RULE} A service watches 20 shared paths at most.`,
+    fixes: ["Pass each one as --shared web=packages/ui"],
+  },
+  "api.notARepositorySource": {
+    title: "This service does not build a repository",
+    reason:
+      "--root and --shared configure a service built from a GitHub repository; an uploaded service builds the folder ajs-cloud deploy packs.",
+    fixes: [
+      "Link the service without --root and --shared",
+      "Or point it at a repository in the console first",
+    ],
   },
   "api.unbuildable": {
     title: "This folder cannot be built",

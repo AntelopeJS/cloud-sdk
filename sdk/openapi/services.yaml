@@ -9,10 +9,7 @@ schemas:
     properties:
       name: { type: string }
       appName: { type: string }
-      source:
-        oneOf:
-          - $ref: '#/schemas/UploadSource'
-          - $ref: '#/schemas/RepositorySource'
+      source: { $ref: '#/schemas/ServiceSource' }
       port: { type: [integer, "null"] }
       isPublic: { type: boolean }
   UploadSource:
@@ -23,8 +20,9 @@ schemas:
   RepositorySource:
     description: |
       A GitHub repository the workspace's GitHub installation grants. Two services of one
-      repository differ by their Dockerfile: an API built by the AntelopeJS recipe next to
-      a dashboard built by `frontend.Dockerfile`.
+      repository differ by their Dockerfile, an API built by the AntelopeJS recipe next to
+      a dashboard built by `frontend.Dockerfile`, or by their root folder, `apps/api` next
+      to `apps/web` in a monorepo.
     type: object
     required: [type, repository]
     properties:
@@ -34,14 +32,56 @@ schemas:
         description: The branch this service builds; null or absent follows its environment's branch.
         type: [string, "null"]
       dockerfilePath: { $ref: '#/schemas/DockerfilePath' }
+      rootPath: { $ref: '#/schemas/RootPath' }
+      sharedPaths: { $ref: '#/schemas/SharedPaths' }
+  ServiceSource:
+    description: |
+      Where a service's deployments come from, as it is written: an upload each
+      `ajs cloud deploy` carries, or a repository AntelopeJS Cloud builds at each push.
+    oneOf:
+      - $ref: '#/schemas/UploadSource'
+      - $ref: '#/schemas/RepositorySource'
+  RepositoryPath:
+    description: |
+      A file or folder inside the repository, relative to its root: plain segments of
+      letters, digits, `.`, `_` and `-`, separated by `/`, none of them `.` or `..`, 255
+      characters at most. An absolute path, a drive letter, a backslash, a blank, a
+      trailing slash or any other character is refused.
+    type: string
+    maxLength: 255
+    pattern: '^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$'
   DockerfilePath:
     description: |
       Path, inside the repository, of the Dockerfile that builds the service, such as
       `frontend.Dockerfile` or `apps/web/Dockerfile`: plain segments of letters, digits,
       `.`, `_` and `-`, separated by `/`. Null or absent: the root `Dockerfile` when the
-      repository has one, else a recipe.
+      repository has one, else a recipe. Relative to the repository, not to the root
+      folder: `docker/web.Dockerfile` with the root folder `apps/web` builds the folder
+      with a Dockerfile kept outside it.
     type: [string, "null"]
     maxLength: 255
+  RootPath:
+    description: |
+      The folder of the repository the service builds from, such as `apps/web`: the build
+      context holds that folder and nothing else, the recipe reads the folder's
+      `package.json`, and a push rebuilds the service only when it touches the folder, one
+      of its shared paths or its Dockerfile. A path as `RepositoryPath` defines it. Null
+      or absent: the repository root, rebuilt at every push. A build of a commit that
+      holds nothing under the folder fails with `cloud.errors.builds.root_folder_not_found`.
+    type: [string, "null"]
+    maxLength: 255
+    pattern: '^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$'
+  SharedPaths:
+    description: |
+      Files or folders outside the root folder a push rebuilds the service for, such as a
+      shared package (`packages/ui`) or the lockfile at the repository root
+      (`pnpm-lock.yaml`), 20 at most, each as `RepositoryPath` defines it. They steer which
+      pushes rebuild the service, never the build context. Read only when a root folder is
+      set; an empty list, or an absent field, names none.
+    type: array
+    maxItems: 20
+    uniqueItems: true
+    items: { $ref: '#/schemas/RepositoryPath' }
   ServiceSettingsSource:
     description: Where the service's deployments come from.
     type: object
@@ -50,6 +90,13 @@ schemas:
       type: { type: string, enum: [repository, image, upload, database] }
       repository: { type: [string, "null"], description: "`owner/name`, for a repository source." }
       dockerfilePath: { $ref: '#/schemas/DockerfilePath' }
+      rootPath:
+        description: The folder a repository service builds from; null for the repository root, and for every other source. Absent from an API older than this field.
+        type: [string, "null"]
+      sharedPaths:
+        description: The paths outside the root folder a push rebuilds a repository service for; empty for every other source. Absent from an API older than this field.
+        type: array
+        items: { type: string }
 paths:
   port:
     put:
@@ -172,6 +219,124 @@ paths:
           description: Done
         '409':
           description: '`cloud.errors.settings.public_needs_port`: a service without a port cannot be opened. `cloud.errors.settings.subdomain_taken`: another service holds its address. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  source:
+    put:
+      operationId: setServiceSource
+      description: |
+        Points the service at another source, the whole of it in one write: an upload each
+        `ajs cloud deploy` carries, or a repository with its branch, Dockerfile, root folder
+        and shared paths. An upload and a repository do not share a field, so switching
+        between them is one write of one value, and a repository field left out is cleared.
+        Configuration only: what runs changes at the next deployment, and the revisions
+        already built keep their image.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ServiceSource' }
+      responses:
+        '200':
+          description: Done
+        '400':
+          description: '`cloud.errors.settings.invalid_source`: neither an upload nor a repository as `owner/name` with a valid branch. `cloud.errors.settings.invalid_dockerfile_path`, `cloud.errors.settings.invalid_root_path`, `cloud.errors.settings.invalid_shared_paths`: that field is not a plain relative path inside the repository, or holds more than 20 shared paths.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '403':
+          description: '`cloud.errors.projects.repository_not_granted`: the workspace''s GitHub installation does not grant the repository.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '409':
+          description: '`cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  sourceRootPath:
+    put:
+      operationId: setServiceRootPath
+      description: |
+        Names the folder of its repository the service builds from, such as `apps/web` in a
+        monorepo, or goes back to the repository root with null. The next build takes the
+        folder as its context, with the Dockerfile `dockerfilePath` names written at its
+        root, and the next push rebuilds the service only when it touches the folder, one of
+        its shared paths or its Dockerfile; the revisions already built keep their image. A
+        build of a commit that holds nothing under the folder fails with
+        `cloud.errors.builds.root_folder_not_found`.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [path]
+              properties:
+                path: { $ref: '#/schemas/RootPath' }
+      responses:
+        '200':
+          description: Done
+        '400':
+          description: '`cloud.errors.settings.invalid_root_path`: not a plain relative path inside the repository.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '409':
+          description: '`cloud.errors.settings.not_a_repository_source`: the service does not build a repository. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        default: { $ref: './cloud.openapi.yaml#/components/responses/Error' }
+  sourceSharedPaths:
+    put:
+      operationId: setServiceSharedPaths
+      description: |
+        Names the paths outside the root folder a push rebuilds the service for, such as a
+        shared package or the lockfile at the repository root; an empty list clears them.
+        The next push reads them, and only while the service has a root folder: without one,
+        every push rebuilds the service. Besides a list, the API reads the paths from one
+        text separated by blanks or commas; the SDK sends a list.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paths]
+              properties:
+                paths: { $ref: '#/schemas/SharedPaths' }
+      responses:
+        '200':
+          description: Done
+        '400':
+          description: '`cloud.errors.settings.invalid_shared_paths`: more than 20 paths, or one that is not a plain relative path inside the repository.'
+          content:
+            application/json:
+              schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }
+        '409':
+          description: '`cloud.errors.settings.not_a_repository_source`: the service does not build a repository. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited.'
           content:
             application/json:
               schema: { $ref: './cloud.openapi.yaml#/components/schemas/Error' }

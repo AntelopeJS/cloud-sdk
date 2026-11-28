@@ -34,7 +34,9 @@ permissions:
 
 jobs:
   release-cli:
-    if: github.event_name != 'workflow_dispatch' || inputs.package-directory == 'cli'
+    needs:
+      - release-sdk
+    if: ${{ !failure() && !cancelled() && (github.event_name != 'workflow_dispatch' || inputs.package-directory == 'cli' || inputs.preview == true && inputs.package-directory == '') }}
     uses: AntelopeJS/.github/.github/workflows/release-npm-public.yml@v2
     with:
       release-version: ${{ inputs.release-version }}
@@ -47,7 +49,7 @@ jobs:
       RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
   release-sdk:
-    if: github.event_name != 'workflow_dispatch' || inputs.package-directory == 'sdk'
+    if: github.event_name != 'workflow_dispatch' || inputs.package-directory == 'sdk' || inputs.preview == true && inputs.package-directory == ''
     uses: AntelopeJS/.github/.github/workflows/release-npm-public.yml@v2
     with:
       release-version: ${{ inputs.release-version }}
