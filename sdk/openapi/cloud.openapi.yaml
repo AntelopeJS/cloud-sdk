@@ -248,13 +248,14 @@ components:
           items: { $ref: 'volumes.yaml#/schemas/ServiceSettingsVolume' }
         volumeLimits:
           type: object
-          required: [minGb, maxGb, removedRetentionDays]
+          required: [minGb, maxGb]
           properties:
             minGb: { type: integer }
             maxGb: { type: integer }
             removedRetentionDays:
-              description: Days support can still recover a detached volume's latest snapshot.
+              description: Not sent. A volume is never detached, and a removed service's volume is kept until an operator purges it, so there is no recovery window to state.
               type: integer
+              deprecated: true
 paths:
   /api/cloud/onboarding/:
     get:

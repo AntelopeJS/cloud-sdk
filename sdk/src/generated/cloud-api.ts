@@ -934,8 +934,11 @@ export interface components {
             volumeLimits: {
                 minGb: number;
                 maxGb: number;
-                /** @description Days support can still recover a detached volume's latest snapshot. */
-                removedRetentionDays: number;
+                /**
+                 * @deprecated
+                 * @description Not sent. A volume is never detached, and a removed service's volume is kept until an operator purges it, so there is no recovery window to state.
+                 */
+                removedRetentionDays?: number;
             };
         };
         /**
@@ -2099,7 +2102,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description `cloud.errors.settings.volume_already_attached`: the service already has a volume. `cloud.errors.limits.volumes_per_workspace`: the workspace holds as many volumes as its plan allows. `cloud.errors.limits.volume_size_bytes`: the size is over the plan's ceiling for one volume. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            /** @description `cloud.errors.settings.volume_already_attached`: the service already has a volume. `cloud.errors.limits.volumes_per_workspace`: the workspace holds as many volumes as its plan allows. `cloud.errors.limits.volume_size_bytes`: the size is over the plan's ceiling for one volume. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. `cloud.errors.settings.primitive_owned_setting`: the service is a managed database, whose volume its primitive owns. `cloud.errors.settings.tier.<limit>`: the service pinned to one replica with the volume does not fit the workspace's tier. `cloud.errors.settings.concurrent_edit`: another change to the service holds it, or the service was removed meanwhile; retry. `cloud.errors.deploy.deployment_in_progress`: a deployment of the service holds it; retry once it settles. */
             409: {
                 headers: {
                     [name: string]: unknown;
