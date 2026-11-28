@@ -162,6 +162,23 @@ await api.setServiceExposure(serviceId, true); // false closes it again
 
 `setServiceExposure` refuses a service without a port with `cloud.errors.settings.public_needs_port`.
 
+`attachServiceVolume` gives a service that has none a persistent volume, and `serviceSettings(serviceId)` lists the volumes a service has with the space each uses (`usedGb` is null when it could not be measured). A service holds one volume, and the service runs on one replica once it has one:
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const serviceId = "…";
+
+await api.attachServiceVolume(serviceId, {
+  name: "data",
+  mountPath: "/data",
+  sizeGb: 5,
+});
+```
+
+It refuses an invalid name, path or size with `cloud.errors.settings.invalid_volume` (400), a second volume with `cloud.errors.settings.volume_already_attached` (409), and a volume past the plan's count or size with a `cloud.errors.limits.*` code (409).
+
 ## Variables
 
 `listVariables` lists the variables of every service of an environment, those wired from a resource included; a secret's `value` is always `null`. `setVariable` creates or changes one variable of a service: a new variable is a secret unless `secret` is `false`, and a held variable keeps its kind. `deleteVariable` removes one:
