@@ -4,20 +4,25 @@ import {
   type HelpExample,
   helpTextWidth,
   unbreakable,
-  withExamples,
   wrapText,
 } from "@antelopejs/core/cli";
 import { Command, Option } from "commander";
+import {
+  actions,
+  globals,
+  invoked,
+  withInvokedExamples,
+} from "./command-kit.js";
 import { DEFAULT_DEPLOY_TIMEOUT_MINUTES } from "./constants.js";
 import { isRecord, isString } from "./guards.js";
 import { applyCloudHelp, ENVIRONMENT_TOPIC } from "./help.js";
 import { language } from "./i18n.js";
 import { asInvoked } from "./invocation.js";
 import { defaultRuntime } from "./runtime.js";
+import { servicesCommand } from "./services-command.js";
 import type {
   DeployOptions,
   EnvSetOptions,
-  GlobalOptions,
   LinkOptions,
   LogsOptions,
   Runtime,
@@ -25,7 +30,6 @@ import type {
 import {
   validateDeployArguments,
   validateEnvArguments,
-  validateGlobalOptions,
   validateLinkOptions,
 } from "./validation.js";
 
@@ -49,23 +53,8 @@ function packageVersion(): string {
   return manifest.version;
 }
 
-/** Examples with each command written the way the person runs it. */
-function invoked(examples: HelpExample[]): HelpExample[] {
-  return examples.map((example) => ({
-    ...example,
-    command: asInvoked(example.command),
-  }));
-}
-
 function invokedExamples(examples: HelpExample[], width: number): string {
   return formatExamples(invoked(examples), width);
-}
-
-function withInvokedExamples(
-  command: Command,
-  examples: HelpExample[],
-): ReturnType<typeof withExamples> {
-  return withExamples(command, invoked(examples));
 }
 
 const ROOT_EXAMPLES: HelpExample[] = [
@@ -95,19 +84,6 @@ function describeHelpFooter(width: number): string {
     "",
     ...wrapText(pointer, width),
   ].join("\n");
-}
-
-function globals(command: Command): GlobalOptions {
-  return command.optsWithGlobals<GlobalOptions>();
-}
-
-/**
- * Checks the global options, then loads the actions: `--help`, `--version`
- * and usage errors never load them.
- */
-async function actions(options: GlobalOptions) {
-  validateGlobalOptions(options);
-  return import("./actions.js");
 }
 
 function loginCommand(runtime: Runtime): Command {
@@ -450,6 +426,7 @@ const COMMANDS = [
   deployCommand,
   linkCommand,
   envCommand,
+  servicesCommand,
   statusCommand,
   openCommand,
   logsCommand,

@@ -1,5 +1,6 @@
 import { DEFAULT_DEPLOY_TIMEOUT_MINUTES } from "./constants.js";
 import { CliError } from "./errors.js";
+import { parseMaintenanceWindow } from "./maintenance-window.js";
 import {
   isValidPort,
   isValidProjectSlug,
@@ -15,6 +16,7 @@ import type {
   EnvSetOptions,
   GlobalOptions,
   LinkOptions,
+  MaintenanceSetOptions,
 } from "./types.js";
 import { parseVariableAssignment } from "./variables.js";
 
@@ -105,6 +107,19 @@ export function validateEnvArguments(
   if (service !== undefined && !isValidServiceName(service))
     throw new CliError("invalid_service_name", service);
   if (assignment !== undefined) parseVariableAssignment(assignment, options);
+}
+
+/**
+ * Fails before any request on a service name, or a maintenance window the
+ * API would refuse.
+ */
+export function validateMaintenanceArguments(
+  service: string,
+  options?: MaintenanceSetOptions,
+): void {
+  if (!isValidServiceName(service))
+    throw new CliError("invalid_service_name", service);
+  if (options !== undefined) parseMaintenanceWindow(options);
 }
 
 export function validateLinkOptions(options: LinkOptions): void {

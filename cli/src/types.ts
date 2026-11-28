@@ -81,6 +81,21 @@ export interface EnvSetOptions {
   buildTime?: boolean;
 }
 
+/**
+ * Options of `services maintenance-window set`, as typed: each one is
+ * required, and checked before any request.
+ */
+export interface MaintenanceSetOptions {
+  /** A day of the week, such as `sunday`. */
+  day: string;
+  /** The hour the window opens, 0 to 23. */
+  start: string;
+  /** How long it stays open, 1 to 4 hours. */
+  hours: string;
+  /** The IANA time zone the day and the hour are read in. */
+  zone: string;
+}
+
 export interface Runtime {
   cwd: string;
   configHome: string;

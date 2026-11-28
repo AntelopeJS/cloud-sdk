@@ -66,6 +66,9 @@ ajs cloud logs web
 | `env list [service]` | Lists the variables of the services, with their value, `(secret)` or the service a wired one follows, and whether the builds get them |
 | `env set <service> <KEY=value>` | Sets a variable: a secret by default, a visible value with `--plain`, one the builds also get with `--build-time` |
 | `env unset <service> <KEY>` | Removes a variable |
+| `services maintenance-window show <service>` | Shows the maintenance window of a managed database, its next opening and whether you may change it |
+| `services maintenance-window set <service>` | Chooses the window: `--day`, `--start`, `--hours` and `--zone` |
+| `services maintenance-window reset <service>` | Goes back to the platform's default window |
 | `status` | Shows each service's state, any deployment in progress, and its URL |
 | `open [service]` | Opens the project in the console, or a service's public URL |
 | `logs <service>` | Prints the service's recent logs (last hour); `-f` follows them |
@@ -183,6 +186,31 @@ list` shows `build and runtime` or `runtime` for each one.
 ajs cloud env set web NEXT_PUBLIC_SITE_URL=https://shop.example --build-time
 ajs cloud env set web NEXT_PUBLIC_SITE_URL=https://shop.example --no-build-time
 ```
+
+### Maintenance windows
+
+The platform applies the updates it holds back for a managed database (engine
+releases, security fixes) inside the database's maintenance window only: one
+weekly slot of 1 to 4 hours, read in a time zone. A database whose owner chose
+none runs the platform's default, Sunday 02:00 to 05:00 in `Europe/Brussels`;
+an update that waited 14 days is applied at the next opening whatever the
+database's health. `services maintenance-window` reads and chooses it, for a
+database of the linked project's production environment.
+
+```sh
+ajs cloud services maintenance-window show postgres
+ajs cloud services maintenance-window set postgres --day tuesday --start 1 --hours 2 --zone Europe/Paris
+ajs cloud services maintenance-window reset postgres
+```
+
+`show` prints the window, whether it is the default, its next opening on the
+window's own clock, and whether you may change it. `set` takes all four
+options: a day (`monday` to `sunday`), a start hour from 0 to 23, a duration
+from 1 to 4 hours and an IANA time zone; a value outside them is a usage error
+(exit code 2) before any request. Only the workspace owner chooses, on a paid
+plan; the API refuses a member and a workspace on Free, and the CLI says so.
+Choosing a window redeploys nothing. With `--json`, the three commands emit
+`maintenance_window`, `maintenance_window_set` and `maintenance_window_reset`.
 
 ### Following a deployment
 

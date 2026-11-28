@@ -98,6 +98,24 @@ const MESSAGES = {
     variableRemoved: "{key} removed from {service}",
     buildTimePublic:
       "{key} is public: its value is written into the image, where anyone who can pull it reads it",
+    maintenanceWindow: "Window",
+    maintenanceNext: "Next opening",
+    maintenanceCanEdit: "Change",
+    maintenanceDefault: "{window}, the platform's default",
+    maintenanceEditable: "yes",
+    maintenanceOwnerOnly: "no: only the workspace owner can, on a paid plan",
+    maintenanceWindowText: "{day} {start}–{end} ({zone})",
+    settingMaintenance: "Setting the maintenance window of {service}",
+    maintenanceSet: "Maintenance window of {service}: {window}",
+    resettingMaintenance: "Resetting the maintenance window of {service}",
+    maintenanceReset: "{service} is back on the platform's maintenance window",
+    dayMonday: "Monday",
+    dayTuesday: "Tuesday",
+    dayWednesday: "Wednesday",
+    dayThursday: "Thursday",
+    dayFriday: "Friday",
+    daySaturday: "Saturday",
+    daySunday: "Sunday",
   },
   fr: {
     userCode: "Code :",
@@ -196,6 +214,27 @@ const MESSAGES = {
     variableRemoved: "{key} supprimé de {service}",
     buildTimePublic:
       "{key} est public : sa valeur est écrite dans l’image, où quiconque peut la récupérer la lit",
+    maintenanceWindow: "Fenêtre",
+    maintenanceNext: "Prochaine ouverture",
+    maintenanceCanEdit: "Modifiable",
+    maintenanceDefault: "{window}, celle de la plateforme par défaut",
+    maintenanceEditable: "oui",
+    maintenanceOwnerOnly:
+      "non : seul le propriétaire de l’espace de travail le peut, sur une offre payante",
+    maintenanceWindowText: "{day} {start}–{end} ({zone})",
+    settingMaintenance: "Définition de la fenêtre de maintenance de {service}",
+    maintenanceSet: "Fenêtre de maintenance de {service} : {window}",
+    resettingMaintenance:
+      "Retour à la fenêtre de maintenance par défaut pour {service}",
+    maintenanceReset:
+      "{service} reprend la fenêtre de maintenance de la plateforme",
+    dayMonday: "lundi",
+    dayTuesday: "mardi",
+    dayWednesday: "mercredi",
+    dayThursday: "jeudi",
+    dayFriday: "vendredi",
+    daySaturday: "samedi",
+    daySunday: "dimanche",
   },
 } as const;
 

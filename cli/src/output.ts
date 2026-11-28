@@ -2,6 +2,8 @@ import type {
   CloudApi,
   DeviceAuthorization,
   DeviceToken,
+  MaintenanceWindow,
+  MaintenanceWindowView,
   SseEvent,
   WorkspaceProvisioning,
 } from "@antelopejs/cloud-sdk";
@@ -80,6 +82,16 @@ interface CliRecords {
   variable_removed: { service: string; key: string };
   /** The variable the builds get, whose value is now public. */
   build_time_public: { service: string; key: string };
+  maintenance_window: MaintenanceWindowView & {
+    service: string;
+    serviceId: string;
+  };
+  maintenance_window_set: {
+    service: string;
+    serviceId: string;
+    window: MaintenanceWindow;
+  };
+  maintenance_window_reset: { service: string; serviceId: string };
 }
 
 /** Writes one versioned JSON Lines record on stdout. */

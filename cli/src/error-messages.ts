@@ -44,6 +44,10 @@ const USAGE_CODES = new Set([
   "invalid_build_time_value",
   "invalid_service_root",
   "invalid_service_shared_path",
+  "invalid_maintenance_day",
+  "invalid_maintenance_start",
+  "invalid_maintenance_hours",
+  "invalid_maintenance_zone",
   "service_path_outside_project",
   "unknown_region",
 ]);
@@ -81,6 +85,19 @@ const API_PROBLEMS = new Map<string, string>([
   ["cloud.errors.settings.entry.reference_key", "api.wiredVariable"],
   ["cloud.errors.settings.entry.invalid_key", "api.invalidVariableKey"],
   ["cloud.errors.settings.entry.empty_value", "api.emptyVariableValue"],
+  [
+    "cloud.errors.settings.invalid_maintenance_window",
+    "api.invalidMaintenanceWindow",
+  ],
+  ["cloud.errors.settings.unknown_time_zone", "api.unknownTimeZone"],
+  [
+    "cloud.errors.settings.maintenance_window_owner_only",
+    "api.maintenanceOwnerOnly",
+  ],
+  [
+    "cloud.errors.settings.maintenance_window_plan_locked",
+    "api.maintenancePlanLocked",
+  ],
   ["cloud.errors.infra.unavailable", "api.infraUnavailable"],
   ["cloud.errors.workspace.not_ready", "api.workspaceNotReady"],
   ["cloud.errors.project.unknown_project", "api.projectGone"],
