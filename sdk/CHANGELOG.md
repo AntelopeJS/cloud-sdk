@@ -1,6 +1,24 @@
 # Changelog
 
 
+## v0.1.9
+
+[compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.8...cloud-sdk-v0.1.9)
+
+### 🚀 Enhancements
+
+- **sdk:** Read and choose the maintenance window of a managed database in the spec, the SDK and the CLI (ANT-810) ([#50](https://github.com/AntelopeJS/cloud-sdk/pull/50))
+- **sdk:** Attach a volume to a service and read its volumes (W1941e8b4-2) ([#52](https://github.com/AntelopeJS/cloud-sdk/pull/52))
+
+### 📦 Build
+
+- **deps:** Move CI runners to free GitHub runners for public repos (tooling-configs 0.10.15) ([#51](https://github.com/AntelopeJS/cloud-sdk/pull/51))
+
+### ❤️ Contributors
+
+- dada-sudo
+- Antony Rizzitelli
+
 ## v0.1.8
 
 [compare changes](https://github.com/AntelopeJS/cloud-sdk/compare/cloud-sdk-v0.1.7...cloud-sdk-v0.1.8)

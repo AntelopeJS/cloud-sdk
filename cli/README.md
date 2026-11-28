@@ -353,7 +353,7 @@ README and `package.json`.
 
 | Package                 | Supported | Tested with |
 | ----------------------- | --------- | ----------- |
-| `@antelopejs/cloud-sdk` | `^0.1.8`  | `0.1.8`     |
+| `@antelopejs/cloud-sdk` | `^0.1.9`  | `0.1.9`     |
 | `@antelopejs/core`      | `~1.24.0` | `1.24.9`    |
 
 <!-- antelopejs-docs-compat:end -->
