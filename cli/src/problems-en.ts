@@ -8,6 +8,8 @@ const UNBUILDABLE_FIXES = [
   "Add a Dockerfile, or a package.json with a start script",
   "Or run the command from the app's own folder",
 ];
+const REPOSITORY_PATH_RULE =
+  "The path is relative to the repository: letters, digits, dots, dashes and underscores, separated by a slash, 255 characters at most.";
 
 export const EN: ProblemTexts = {
   not_authenticated: {
@@ -81,6 +83,16 @@ export const EN: ProblemTexts = {
     reason:
       "A Dockerfile is given as <service>=<path>, for a service --service maps.",
     fixes: ["Pass it as --dockerfile app=docker/app.Dockerfile"],
+  },
+  invalid_service_root: {
+    title: 'Invalid --root value "{detail}"',
+    reason: `A root folder is given once as <service>=<folder>, for a service --service maps. ${REPOSITORY_PATH_RULE}`,
+    fixes: ["Pass it as --root web=apps/web"],
+  },
+  invalid_service_shared_path: {
+    title: 'Invalid --shared value "{detail}"',
+    reason: `A shared path is given as <service>=<path>, for a service --service maps, 20 per service at most. ${REPOSITORY_PATH_RULE}`,
+    fixes: ["Pass it as --shared web=packages/ui"],
   },
   service_path_outside_project: {
     title: 'The service path "{detail}" is outside the project folder',
@@ -249,6 +261,25 @@ export const EN: ProblemTexts = {
   "api.serviceNameTaken": {
     title: "A service with this name already exists",
     fixes: ["Name the service another way"],
+  },
+  "api.invalidRootPath": {
+    title: "The root folder is not a folder inside the repository",
+    reason: REPOSITORY_PATH_RULE,
+    fixes: ["Pass it as --root web=apps/web"],
+  },
+  "api.invalidSharedPaths": {
+    title: "A shared path is not a path inside the repository",
+    reason: `${REPOSITORY_PATH_RULE} A service watches 20 shared paths at most.`,
+    fixes: ["Pass each one as --shared web=packages/ui"],
+  },
+  "api.notARepositorySource": {
+    title: "This service does not build a repository",
+    reason:
+      "--root and --shared configure a service built from a GitHub repository; an uploaded service builds the folder ajs-cloud deploy packs.",
+    fixes: [
+      "Link the service without --root and --shared",
+      "Or point it at a repository in the console first",
+    ],
   },
   "api.unbuildable": {
     title: "This folder cannot be built",

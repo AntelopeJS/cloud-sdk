@@ -104,6 +104,48 @@ const service = await api.createService(projectId, environmentId, {
 console.log(service);
 ```
 
+In a monorepo, `rootPath` names the folder the service builds from, and `sharedPaths` the paths outside it a push rebuilds the service for:
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const projectId = "…";
+const environmentId = "…";
+
+await api.createService(projectId, environmentId, {
+  name: "web",
+  appName: "shop-web",
+  source: {
+    type: "repository",
+    repository: "acme/shop",
+    rootPath: "apps/web",
+    sharedPaths: ["packages/ui", "pnpm-lock.yaml"],
+  },
+  port: 3000,
+});
+```
+
+The build context holds the folder and nothing else, and the recipe reads the folder's `package.json`. A push rebuilds the service when it touches the folder, one of its shared paths or its Dockerfile, and leaves it alone otherwise. `dockerfilePath` stays relative to the repository, so `docker/web.Dockerfile` with the root folder `apps/web` builds the folder with a Dockerfile kept outside it. Every path is relative to the repository: letters, digits, `.`, `_` and `-`, separated by `/`, 255 characters at most, with no `.` or `..` segment. A service watches 20 shared paths at most.
+
+## Change how a repository service builds
+
+`setServiceDockerfile`, `setServiceRootPath` and `setServiceSharedPaths` each change one field: `null` goes back to the default, and an empty list clears the shared paths. `setServiceSource` writes the whole source in one call, to move a service to another repository or back to uploads. The next build reads the change, and the revisions already built keep their image:
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const serviceId = "…";
+
+await api.setServiceRootPath(serviceId, "apps/web"); // null: the repository root
+await api.setServiceSharedPaths(serviceId, ["packages/ui"]); // []: none
+await api.setServiceDockerfile(serviceId, "docker/web.Dockerfile");
+await api.setServiceSource(serviceId, { type: "upload" });
+```
+
+A path that is not a plain relative path inside the repository is refused with `cloud.errors.settings.invalid_root_path`, `cloud.errors.settings.invalid_shared_paths` or `cloud.errors.settings.invalid_dockerfile_path`, and a service that builds no repository with `cloud.errors.settings.not_a_repository_source`. `serviceSettings` reads the three back in its `source`.
+
 ## Port and exposure
 
 A service that a project creation builds from a repository starts without a port, and is refused its deployments until it has one; a service created with a port, like the `port: 3000` above, keeps it. Only the port setter waits for a deployment: the running revision keeps the port it was deployed with, and the next deployment takes the new one. `setServiceExposure` opens the service to the internet on its own address, or closes it:

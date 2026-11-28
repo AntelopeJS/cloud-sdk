@@ -8,6 +8,8 @@ const NON_CONSTRUCTIBLE_CORRECTIFS = [
   "Ajoutez un Dockerfile, ou un package.json avec un script start",
   "Ou lancez la commande depuis le dossier de l’app elle-même",
 ];
+const REGLE_CHEMIN_DEPOT =
+  "Le chemin est relatif au dépôt : lettres, chiffres, points, tirets et tirets bas, séparés par une barre oblique, 255 caractères au plus.";
 
 export const FR: ProblemTexts = {
   not_authenticated: {
@@ -83,6 +85,16 @@ export const FR: ProblemTexts = {
     reason:
       "Un Dockerfile se donne sous la forme <service>=<chemin>, pour un service que --service associe.",
     fixes: ["Passez-le ainsi : --dockerfile app=docker/app.Dockerfile"],
+  },
+  invalid_service_root: {
+    title: "Valeur --root invalide « {detail} »",
+    reason: `Un dossier racine se donne une fois sous la forme <service>=<dossier>, pour un service que --service associe. ${REGLE_CHEMIN_DEPOT}`,
+    fixes: ["Passez-le ainsi : --root web=apps/web"],
+  },
+  invalid_service_shared_path: {
+    title: "Valeur --shared invalide « {detail} »",
+    reason: `Un chemin partagé se donne sous la forme <service>=<chemin>, pour un service que --service associe, 20 par service au plus. ${REGLE_CHEMIN_DEPOT}`,
+    fixes: ["Passez-le ainsi : --shared web=packages/ui"],
   },
   service_path_outside_project: {
     title: "Le chemin de service « {detail} » est hors du dossier du projet",
@@ -254,6 +266,25 @@ export const FR: ProblemTexts = {
   "api.serviceNameTaken": {
     title: "Un service porte déjà ce nom",
     fixes: ["Nommez le service autrement"],
+  },
+  "api.invalidRootPath": {
+    title: "Le dossier racine n’est pas un dossier du dépôt",
+    reason: REGLE_CHEMIN_DEPOT,
+    fixes: ["Passez-le ainsi : --root web=apps/web"],
+  },
+  "api.invalidSharedPaths": {
+    title: "Un chemin partagé n’est pas un chemin du dépôt",
+    reason: `${REGLE_CHEMIN_DEPOT} Un service surveille au plus 20 chemins partagés.`,
+    fixes: ["Passez chacun ainsi : --shared web=packages/ui"],
+  },
+  "api.notARepositorySource": {
+    title: "Ce service ne construit pas de dépôt",
+    reason:
+      "--root et --shared configurent un service construit depuis un dépôt GitHub ; un service envoyé construit le dossier qu’ajs-cloud deploy empaquette.",
+    fixes: [
+      "Associez le service sans --root ni --shared",
+      "Ou pointez-le d’abord vers un dépôt dans la console",
+    ],
   },
   "api.unbuildable": {
     title: "Ce dossier ne peut pas être construit",

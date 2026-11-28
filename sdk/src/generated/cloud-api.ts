@@ -400,6 +400,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cloud/services/{serviceId}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Points the service at another source, the whole of it in one write: an upload each
+         *     `ajs cloud deploy` carries, or a repository with its branch, Dockerfile, root folder
+         *     and shared paths. An upload and a repository do not share a field, so switching
+         *     between them is one write of one value, and a repository field left out is cleared.
+         *     Configuration only: what runs changes at the next deployment, and the revisions
+         *     already built keep their image.
+         */
+        put: operations["setServiceSource"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cloud/services/{serviceId}/source-dockerfile": {
         parameters: {
             query?: never;
@@ -415,6 +439,54 @@ export interface paths {
          *     that path fails with `cloud.errors.builds.dockerfile_not_found`.
          */
         put: operations["setServiceDockerfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cloud/services/{serviceId}/source-root-path": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Names the folder of its repository the service builds from, such as `apps/web` in a
+         *     monorepo, or goes back to the repository root with null. The next build takes the
+         *     folder as its context, with the Dockerfile `dockerfilePath` names written at its
+         *     root, and the next push rebuilds the service only when it touches the folder, one of
+         *     its shared paths or its Dockerfile; the revisions already built keep their image. A
+         *     build of a commit that holds nothing under the folder fails with
+         *     `cloud.errors.builds.root_folder_not_found`.
+         */
+        put: operations["setServiceRootPath"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cloud/services/{serviceId}/source-shared-paths": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Names the paths outside the root folder a push rebuilds the service for, such as a
+         *     shared package or the lockfile at the repository root; an empty list clears them.
+         *     The next push reads them, and only while the service has a root folder: without one,
+         *     every push rebuilds the service. Besides a list, the API reads the paths from one
+         *     text separated by blanks or commas; the SDK sends a list.
+         */
+        put: operations["setServiceSharedPaths"];
         post?: never;
         delete?: never;
         options?: never;
@@ -745,7 +817,7 @@ export interface components {
         NewService: {
             name: string;
             appName: string;
-            source: components["schemas"]["UploadSource"] | components["schemas"]["RepositorySource"];
+            source: components["schemas"]["ServiceSource"];
             port?: number | null;
             isPublic?: boolean;
         };
@@ -954,13 +1026,40 @@ export interface components {
          * @description Path, inside the repository, of the Dockerfile that builds the service, such as
          *     `frontend.Dockerfile` or `apps/web/Dockerfile`: plain segments of letters, digits,
          *     `.`, `_` and `-`, separated by `/`. Null or absent: the root `Dockerfile` when the
-         *     repository has one, else a recipe.
+         *     repository has one, else a recipe. Relative to the repository, not to the root
+         *     folder: `docker/web.Dockerfile` with the root folder `apps/web` builds the folder
+         *     with a Dockerfile kept outside it.
          */
         DockerfilePath: string | null;
         /**
+         * @description The folder of the repository the service builds from, such as `apps/web`: the build
+         *     context holds that folder and nothing else, the recipe reads the folder's
+         *     `package.json`, and a push rebuilds the service only when it touches the folder, one
+         *     of its shared paths or its Dockerfile. A path as `RepositoryPath` defines it. Null
+         *     or absent: the repository root, rebuilt at every push. A build of a commit that
+         *     holds nothing under the folder fails with `cloud.errors.builds.root_folder_not_found`.
+         */
+        RootPath: string | null;
+        /**
+         * @description A file or folder inside the repository, relative to its root: plain segments of
+         *     letters, digits, `.`, `_` and `-`, separated by `/`, none of them `.` or `..`, 255
+         *     characters at most. An absolute path, a drive letter, a backslash, a blank, a
+         *     trailing slash or any other character is refused.
+         */
+        RepositoryPath: string;
+        /**
+         * @description Files or folders outside the root folder a push rebuilds the service for, such as a
+         *     shared package (`packages/ui`) or the lockfile at the repository root
+         *     (`pnpm-lock.yaml`), 20 at most, each as `RepositoryPath` defines it. They steer which
+         *     pushes rebuild the service, never the build context. Read only when a root folder is
+         *     set; an empty list, or an absent field, names none.
+         */
+        SharedPaths: components["schemas"]["RepositoryPath"][];
+        /**
          * @description A GitHub repository the workspace's GitHub installation grants. Two services of one
-         *     repository differ by their Dockerfile: an API built by the AntelopeJS recipe next to
-         *     a dashboard built by `frontend.Dockerfile`.
+         *     repository differ by their Dockerfile, an API built by the AntelopeJS recipe next to
+         *     a dashboard built by `frontend.Dockerfile`, or by their root folder, `apps/api` next
+         *     to `apps/web` in a monorepo.
          */
         RepositorySource: {
             /** @constant */
@@ -970,7 +1069,14 @@ export interface components {
             /** @description The branch this service builds; null or absent follows its environment's branch. */
             branch?: string | null;
             dockerfilePath?: components["schemas"]["DockerfilePath"];
+            rootPath?: components["schemas"]["RootPath"];
+            sharedPaths?: components["schemas"]["SharedPaths"];
         };
+        /**
+         * @description Where a service's deployments come from, as it is written: an upload each
+         *     `ajs cloud deploy` carries, or a repository AntelopeJS Cloud builds at each push.
+         */
+        ServiceSource: components["schemas"]["UploadSource"] | components["schemas"]["RepositorySource"];
         /** @description A monthly amount in the plan's currency. A plan that rates nothing a database holds includes it, with no amount to show. */
         MonthlyCost: {
             /** @constant */
@@ -1107,6 +1213,10 @@ export interface components {
             /** @description `owner/name`, for a repository source. */
             repository?: string | null;
             dockerfilePath?: components["schemas"]["DockerfilePath"];
+            /** @description The folder a repository service builds from; null for the repository root, and for every other source. Absent from an API older than this field. */
+            rootPath?: string | null;
+            /** @description The paths outside the root folder a push rebuilds a repository service for; empty for every other source. Absent from an API older than this field. */
+            sharedPaths?: string[];
         };
         /** @description What a built revision was built from. */
         RevisionBuild: {
@@ -1854,6 +1964,58 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
+    setServiceSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceSource"];
+            };
+        };
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cloud.errors.settings.invalid_source`: neither an upload nor a repository as `owner/name` with a valid branch. `cloud.errors.settings.invalid_dockerfile_path`, `cloud.errors.settings.invalid_root_path`, `cloud.errors.settings.invalid_shared_paths`: that field is not a plain relative path inside the repository, or holds more than 20 shared paths. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.projects.repository_not_granted`: the workspace's GitHub installation does not grant the repository. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     setServiceDockerfile: {
         parameters: {
             query?: never;
@@ -1879,6 +2041,96 @@ export interface operations {
                 content?: never;
             };
             /** @description `cloud.errors.settings.invalid_dockerfile_path`: not a plain relative path inside the repository. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.not_a_repository_source`: the service does not build a repository. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setServiceRootPath: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    path: components["schemas"]["RootPath"];
+                };
+            };
+        };
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cloud.errors.settings.invalid_root_path`: not a plain relative path inside the repository. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.not_a_repository_source`: the service does not build a repository. `cloud.errors.settings.preview_read_only`: a preview mirrors its environment and is not edited. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setServiceSharedPaths: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    paths: components["schemas"]["SharedPaths"];
+                };
+            };
+        };
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cloud.errors.settings.invalid_shared_paths`: more than 20 paths, or one that is not a plain relative path inside the repository. */
             400: {
                 headers: {
                     [name: string]: unknown;

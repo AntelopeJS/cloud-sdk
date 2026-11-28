@@ -5,6 +5,7 @@ import { describeApiError } from "../src/error-messages.js";
 import { CliError } from "../src/errors.js";
 import { DeployProgress } from "../src/progress.js";
 import {
+  parseServiceLayouts,
   selectedServiceNames,
   withServiceDockerfiles,
 } from "../src/project.js";
@@ -52,6 +53,15 @@ describe("prototype keys read as unknown values, never as table entries", () => 
         (error) =>
           error instanceof CliError &&
           error.code === "invalid_service_dockerfile",
+      );
+    });
+
+    test(`a root folder for a service named ${key} is refused`, () => {
+      assert.throws(
+        () =>
+          parseServiceLayouts({ api: { path: "." } }, [`${key}=apps/web`], []),
+        (error) =>
+          error instanceof CliError && error.code === "invalid_service_root",
       );
     });
 

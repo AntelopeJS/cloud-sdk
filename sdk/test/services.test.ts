@@ -216,6 +216,167 @@ describe("a service built from a repository", () => {
   });
 });
 
+describe("a service built from a folder of its repository", () => {
+  const SERVICES =
+    "https://api.antelopejs.cloud/api/cloud/projects/prj%2F1/environments/env%2F2/services";
+  const source = {
+    type: "repository" as const,
+    repository: "acme/shop",
+    dockerfilePath: "docker/web.Dockerfile",
+    rootPath: "apps/web",
+    sharedPaths: ["packages/ui", "pnpm-lock.yaml"],
+  };
+
+  test("is created with its root folder and shared paths next to its Dockerfile", async () => {
+    const { sent, send } = recorder(
+      () =>
+        new Response(
+          JSON.stringify({ serviceId: "svc-9", name: "web", appName: "web" }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    );
+    const api = new CloudApi({ token: "t", fetch: send });
+
+    await api.createService("prj/1", "env/2", {
+      name: "web",
+      appName: "web",
+      source,
+      port: 3000,
+    });
+
+    assert.equal(sent[0]?.url, SERVICES);
+    assert.deepEqual(JSON.parse(sent[0]?.body ?? ""), {
+      name: "web",
+      appName: "web",
+      source,
+      port: 3000,
+    });
+  });
+
+  test("its root folder is put at the encoded service path, null goes back to the repository root, and an answer with no body is accepted", async () => {
+    for (const status of [200, 204]) {
+      const { sent, send } = recorder(() => new Response(null, { status }));
+      const api = new CloudApi({ token: "t", fetch: send });
+
+      assert.equal(
+        await api.setServiceRootPath("svc/3", "apps/web"),
+        undefined,
+      );
+      await api.setServiceRootPath("svc/3", null);
+
+      assert.deepEqual(
+        sent.map(
+          (request) => `${request.method} ${request.url} ${request.body}`,
+        ),
+        [
+          `PUT ${SERVICE}/source-root-path {"path":"apps/web"}`,
+          `PUT ${SERVICE}/source-root-path {"path":null}`,
+        ],
+      );
+    }
+  });
+
+  test("its shared paths are put as the list given, and an empty list clears them", async () => {
+    const { sent, send } = recorder(() => new Response(null, { status: 200 }));
+    const api = new CloudApi({ token: "t", fetch: send });
+
+    assert.equal(
+      await api.setServiceSharedPaths("svc/3", source.sharedPaths),
+      undefined,
+    );
+    await api.setServiceSharedPaths("svc/3", []);
+
+    assert.deepEqual(
+      sent.map((request) => `${request.method} ${request.url} ${request.body}`),
+      [
+        `PUT ${SERVICE}/source-shared-paths {"paths":["packages/ui","pnpm-lock.yaml"]}`,
+        `PUT ${SERVICE}/source-shared-paths {"paths":[]}`,
+      ],
+    );
+  });
+});
+
+describe("the whole source of a service", () => {
+  const source = {
+    type: "repository" as const,
+    repository: "acme/shop",
+    dockerfilePath: "docker/web.Dockerfile",
+    rootPath: "apps/web",
+    sharedPaths: ["packages/ui", "pnpm-lock.yaml"],
+  };
+
+  test("is put in one write, a repository with its layout or an upload", async () => {
+    const { sent, send } = recorder(() => new Response(null, { status: 200 }));
+    const api = new CloudApi({ token: "t", fetch: send });
+
+    assert.equal(
+      await api.setServiceSource("svc/3", { ...source, branch: "main" }),
+      undefined,
+    );
+    await api.setServiceSource("svc/3", { type: "upload" });
+
+    assert.deepEqual(
+      sent.map((request) => `${request.method} ${request.url}`),
+      [`PUT ${SERVICE}/source`, `PUT ${SERVICE}/source`],
+    );
+    assert.deepEqual(JSON.parse(sent[0]?.body ?? ""), {
+      ...source,
+      branch: "main",
+    });
+    assert.deepEqual(JSON.parse(sent[1]?.body ?? ""), { type: "upload" });
+  });
+
+  test("a refused root folder, shared path or source is a CloudApiError carrying the code", async () => {
+    const refusals: Array<[number, string, (api: CloudApi) => Promise<void>]> =
+      [
+        [
+          400,
+          "cloud.errors.settings.invalid_root_path",
+          (api) => api.setServiceRootPath("svc/3", "../web"),
+        ],
+        [
+          400,
+          "cloud.errors.settings.invalid_shared_paths",
+          (api) => api.setServiceSharedPaths("svc/3", ["/packages"]),
+        ],
+        [
+          409,
+          "cloud.errors.settings.not_a_repository_source",
+          (api) => api.setServiceSharedPaths("svc/3", ["packages/ui"]),
+        ],
+        [
+          400,
+          "cloud.errors.settings.invalid_source",
+          (api) =>
+            api.setServiceSource("svc/3", {
+              type: "repository",
+              repository: "not a repository",
+            }),
+        ],
+      ];
+
+    for (const [status, code, call] of refusals) {
+      const { send } = recorder(
+        () =>
+          new Response(JSON.stringify(code), {
+            status,
+            headers: { "content-type": "application/json" },
+          }),
+      );
+
+      await assert.rejects(
+        call(new CloudApi({ token: "t", fetch: send })),
+        (error) => {
+          assert.ok(error instanceof CloudApiError);
+          assert.equal(error.status, status);
+          assert.equal(error.code, code);
+          return true;
+        },
+      );
+    }
+  });
+});
+
 describe("a variable that follows a published value", () => {
   const database = { serviceId: "svc-db", publishedKey: "MONGO_URL" };
 

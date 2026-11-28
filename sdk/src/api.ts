@@ -35,6 +35,8 @@ export type NewUploadService = NewService & { source: { type: "upload" } };
 export type NewRepositoryService = NewService & {
   source: { type: "repository" };
 };
+/** Where a service's deployments come from, as `setServiceSource` writes it. */
+export type ServiceSource = components["schemas"]["ServiceSource"];
 export type VariableOrigin = components["schemas"]["VariableOrigin"];
 export type VariableWrite = components["schemas"]["VariableWrite"];
 export type WorkspaceProvisioning =
@@ -178,7 +180,9 @@ export class CloudApi {
    * that repository at each push to the environment's branch, with the
    * Dockerfile its `dockerfilePath` names when it has one: that is how a
    * second service, such as a dashboard built by `frontend.Dockerfile`, is
-   * built from the repository of the first.
+   * built from the repository of the first. In a monorepo, `rootPath` names
+   * the folder the service builds from, and `sharedPaths` the paths outside
+   * it a push rebuilds the service for.
    */
   async createService(
     projectId: string,
@@ -339,6 +343,69 @@ export class CloudApi {
     const result = await this.client.PUT(
       "/api/cloud/services/{serviceId}/source-dockerfile",
       { params: { path: { serviceId } }, body: { path }, parseAs: "text" },
+    );
+    acceptedOf(result);
+  }
+
+  /**
+   * Names the folder of its repository the service builds from, such as
+   * `apps/web` in a monorepo, or goes back to the repository root with
+   * `null`. The next build takes the folder as its context, and the next
+   * push rebuilds the service only when it touches the folder, a shared path
+   * or the Dockerfile. A path that is not a plain relative path is refused
+   * with `cloud.errors.settings.invalid_root_path`, a service that builds no
+   * repository with `cloud.errors.settings.not_a_repository_source`.
+   */
+  async setServiceRootPath(
+    serviceId: string,
+    path: string | null,
+  ): Promise<void> {
+    const result = await this.client.PUT(
+      "/api/cloud/services/{serviceId}/source-root-path",
+      { params: { path: { serviceId } }, body: { path }, parseAs: "text" },
+    );
+    acceptedOf(result);
+  }
+
+  /**
+   * Names the paths outside the root folder a push rebuilds the service for,
+   * such as a shared package or the lockfile at the repository root; an
+   * empty list clears them. Read by the next push, and only while the
+   * service has a root folder. More than 20 paths, or one that is not a
+   * plain relative path, is refused with
+   * `cloud.errors.settings.invalid_shared_paths`, a service that builds no
+   * repository with `cloud.errors.settings.not_a_repository_source`.
+   */
+  async setServiceSharedPaths(
+    serviceId: string,
+    paths: readonly string[],
+  ): Promise<void> {
+    const result = await this.client.PUT(
+      "/api/cloud/services/{serviceId}/source-shared-paths",
+      {
+        params: { path: { serviceId } },
+        body: { paths: [...paths] },
+        parseAs: "text",
+      },
+    );
+    acceptedOf(result);
+  }
+
+  /**
+   * Points the service at another source, the whole of it in one write: an
+   * upload each deploy carries, or a repository with its branch, Dockerfile,
+   * root folder and shared paths. Configuration only: what runs changes at
+   * the next deployment. A source that cannot be one is refused with
+   * `cloud.errors.settings.invalid_source`, a repository the workspace's
+   * GitHub installation does not grant with 403.
+   */
+  async setServiceSource(
+    serviceId: string,
+    source: ServiceSource,
+  ): Promise<void> {
+    const result = await this.client.PUT(
+      "/api/cloud/services/{serviceId}/source",
+      { params: { path: { serviceId } }, body: source, parseAs: "text" },
     );
     acceptedOf(result);
   }
