@@ -289,3 +289,94 @@ describe("environment variables", () => {
     }
   });
 });
+
+describe("build-time variables", () => {
+  const environment = ["p/1", "env 2"] as const;
+  const marked = {
+    serviceId: "svc/3",
+    key: "NEXT_PUBLIC_SITE_URL",
+    secret: false,
+    value: "https://one.example",
+    buildTime: true,
+    origin: { type: "manual" },
+  };
+
+  test("a set sends the mark with the visible value, and answers the row marked", async () => {
+    const { sent, send } = recorder(() => json(200, JSON.stringify(marked)));
+    const api = new CloudApi({ token: "t", fetch: send });
+
+    const written = await api.setVariable(
+      ...environment,
+      "svc/3",
+      "NEXT_PUBLIC_SITE_URL",
+      { value: "https://one.example", secret: false, buildTime: true },
+    );
+
+    assert.equal(written.buildTime, true);
+    assert.deepEqual(JSON.parse(sent[0]?.body ?? ""), {
+      value: "https://one.example",
+      secret: false,
+      buildTime: true,
+    });
+  });
+
+  test("a set without the mark sends none, so a held variable keeps its own", async () => {
+    const { sent, send } = recorder(() => json(200, JSON.stringify(marked)));
+    const api = new CloudApi({ token: "t", fetch: send });
+
+    await api.setVariable(...environment, "svc/3", "NEXT_PUBLIC_SITE_URL", {
+      value: "https://two.example",
+    });
+
+    assert.deepEqual(JSON.parse(sent[0]?.body ?? ""), {
+      value: "https://two.example",
+    });
+  });
+
+  test("a list reads the mark on each row, and a row from an older API has none", async () => {
+    const older = {
+      serviceId: "svc/3",
+      key: "API_KEY",
+      secret: true,
+      value: null,
+      origin: { type: "manual" },
+    };
+    const list = { variables: [marked, older] };
+    const { send } = recorder(() => json(200, JSON.stringify(list)));
+    const api = new CloudApi({ token: "t", fetch: send });
+
+    const read = await api.listVariables(...environment);
+
+    assert.deepEqual(
+      read.variables.map((variable) => variable.buildTime),
+      [true, undefined],
+    );
+  });
+
+  test("a refused mark is a CloudApiError carrying the code", async () => {
+    const refusals: Array<[number, string]> = [
+      [400, "cloud.errors.settings.entry.build_time_secret"],
+      [400, "cloud.errors.settings.entry.build_time_name"],
+      [400, "cloud.errors.settings.entry.build_time_value"],
+      [409, "cloud.errors.settings.build_time_limit"],
+    ];
+
+    for (const [status, code] of refusals) {
+      const { send } = recorder(() => json(status, JSON.stringify(code)));
+      const api = new CloudApi({ token: "t", fetch: send });
+
+      await assert.rejects(
+        api.setVariable(...environment, "svc/3", "NODE_ENV", {
+          value: "production",
+          buildTime: true,
+        }),
+        (error) => {
+          assert.ok(error instanceof CloudApiError);
+          assert.equal(error.status, status);
+          assert.equal(error.code, code);
+          return true;
+        },
+      );
+    }
+  });
+});

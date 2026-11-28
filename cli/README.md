@@ -63,6 +63,9 @@ ajs cloud logs web
 | `whoami` | Shows the workspace, API and console you are logged in to, and checks the session is still accepted |
 | `deploy [service]` | Deploys the linked services, or creates the project on a first deploy |
 | `link <project>` | Links this folder to an existing project |
+| `env list [service]` | Lists the variables of the services, with their value, `(secret)` or the service a wired one follows, and whether the builds get them |
+| `env set <service> <KEY=value>` | Sets a variable: a secret by default, a visible value with `--plain`, one the builds also get with `--build-time` |
+| `env unset <service> <KEY>` | Removes a variable |
 | `status` | Shows each service's state, any deployment in progress, and its URL |
 | `open [service]` | Opens the project in the console, or a service's public URL |
 | `logs <service>` | Prints the service's recent logs (last hour); `-f` follows them |
@@ -148,6 +151,37 @@ with a `.cloudignore`:
 
 ```sh
 cd frontend && ajs cloud deploy frontend --yes --project my-app --port 3000
+```
+
+### Variables
+
+`env` reads and sets the variables of the linked project's services, in its
+production environment. `env set` creates a secret unless `--plain` is given,
+and keeps the kind of a variable the service already holds; the next
+deployment reads the change.
+
+```sh
+ajs cloud env list                                   # every service
+ajs cloud env set api STRIPE_KEY=sk_live_...         # a secret, never read back
+ajs cloud env set api LOG_LEVEL=info --plain         # a visible value
+ajs cloud env unset api LOG_LEVEL
+```
+
+`--build-time` also hands a visible value to the service's builds as a Docker
+build argument, for a value the framework bakes into the bundle
+(`NEXT_PUBLIC_*`, `VITE_*`); changing it rebuilds the service. **A build-time
+variable is public:** its value is written into the image, where anyone who can
+pull it reads it, so a secret can never be one. The name is upper case
+(`^[A-Z_][A-Z0-9_]*$`) and not one the build reserves (`BUILD_COMMAND`,
+`NODE_ENV`, `ANTELOPEJS_LAUNCH_ENV`, `BUILD_DATE`, `VCS_REF`, `VERSION`,
+`BUILDKIT_*` and the proxy names); the value is one line of at most 1024
+characters. The CLI refuses a name or a value the API would, before any
+request. `--no-build-time` takes a variable back to runtime only, and `env
+list` shows `build and runtime` or `runtime` for each one.
+
+```sh
+ajs cloud env set web NEXT_PUBLIC_SITE_URL=https://shop.example --build-time
+ajs cloud env set web NEXT_PUBLIC_SITE_URL=https://shop.example --no-build-time
 ```
 
 ### Following a deployment

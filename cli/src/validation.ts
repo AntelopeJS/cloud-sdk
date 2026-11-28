@@ -10,7 +10,13 @@ import {
   parseServicePaths,
   withServiceDockerfiles,
 } from "./project.js";
-import type { DeployOptions, GlobalOptions, LinkOptions } from "./types.js";
+import type {
+  DeployOptions,
+  EnvSetOptions,
+  GlobalOptions,
+  LinkOptions,
+} from "./types.js";
+import { parseVariableAssignment } from "./variables.js";
 
 const MINUTE_MS = 60_000;
 const PORT_PATTERN = /^\d+$/;
@@ -84,6 +90,21 @@ export function validateDeployArguments(
     throw new CliError("invalid_project_slug", options.project);
   if (service !== undefined && !isValidServiceName(service))
     throw new CliError("invalid_service_name", service);
+}
+
+/**
+ * Fails before any request on a service name, or a `KEY=value` with its
+ * `env set` options, the API would only refuse after the session, the link
+ * and the project were read.
+ */
+export function validateEnvArguments(
+  service: string | undefined,
+  assignment?: string,
+  options: EnvSetOptions = {},
+): void {
+  if (service !== undefined && !isValidServiceName(service))
+    throw new CliError("invalid_service_name", service);
+  if (assignment !== undefined) parseVariableAssignment(assignment, options);
 }
 
 export function validateLinkOptions(options: LinkOptions): void {

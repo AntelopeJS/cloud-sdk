@@ -8,6 +8,10 @@ const UNBUILDABLE_FIXES = [
   "Add a Dockerfile, or a package.json with a start script",
   "Or run the command from the app's own folder",
 ];
+const BUILD_TIME_NAME_RULE =
+  "A build-time variable is named in upper case ([A-Z_][A-Z0-9_]*) and is not a name the build reserves: BUILD_COMMAND, NODE_ENV, ANTELOPEJS_LAUNCH_ENV, BUILD_DATE, VCS_REF, VERSION, BUILDKIT_* and the proxy names (HTTP_PROXY, HTTPS_PROXY, FTP_PROXY, NO_PROXY, ALL_PROXY).";
+const BUILD_TIME_VALUE_RULE =
+  "A build-time value is one line of at most 1024 characters, without control characters.";
 const REPOSITORY_PATH_RULE =
   "The path is relative to the repository: letters, digits, dots, dashes and underscores, separated by a slash, 255 characters at most.";
 
@@ -83,6 +87,21 @@ export const EN: ProblemTexts = {
     reason:
       "A Dockerfile is given as <service>=<path>, for a service --service maps.",
     fixes: ["Pass it as --dockerfile app=docker/app.Dockerfile"],
+  },
+  invalid_variable_assignment: {
+    title: 'Invalid variable "{detail}"',
+    reason: "A variable is given as KEY=value, with a value that is not empty.",
+    fixes: ["Pass it as NEXT_PUBLIC_SITE_URL=https://shop.example"],
+  },
+  invalid_build_time_name: {
+    title: "{detail} cannot be a build-time variable",
+    reason: BUILD_TIME_NAME_RULE,
+    fixes: ["Rename it, or set it without --build-time"],
+  },
+  invalid_build_time_value: {
+    title: "The value of {detail} cannot be a build argument",
+    reason: BUILD_TIME_VALUE_RULE,
+    fixes: ["Shorten it to one line, or set it without --build-time"],
   },
   invalid_service_root: {
     title: 'Invalid --root value "{detail}"',
@@ -332,6 +351,48 @@ export const EN: ProblemTexts = {
   "api.plainValueTooLong": {
     title: "The plain variable {key} is longer than {limit} characters",
     fixes: ["Mark it as secret in the console to keep a longer value"],
+  },
+  "api.buildTimeSecret": {
+    title: "A secret is never available at build time",
+    reason:
+      "Its value would be written into the image, where anyone who can pull it reads it.",
+    fixes: [
+      "Set it with --plain --build-time if the value can be public",
+      "Or set it without --build-time",
+    ],
+  },
+  "api.buildTimeName": {
+    title: "The build reserves this variable name",
+    reason: BUILD_TIME_NAME_RULE,
+    fixes: ["Rename it, or set it without --build-time"],
+  },
+  "api.buildTimeValue": {
+    title: "The value cannot be a build argument",
+    reason: BUILD_TIME_VALUE_RULE,
+    fixes: ["Shorten it to one line, or set it without --build-time"],
+  },
+  "api.buildTimeLimit": {
+    title: "The service has reached its build-time variable limit",
+    reason:
+      "A service hands at most 32 variables, 64 KiB in all, to its builds.",
+    fixes: ["Set some of them without --build-time"],
+  },
+  "api.unknownVariable": {
+    title: "The service holds no such variable",
+    fixes: ["Run ajs-cloud env list to see its variables"],
+  },
+  "api.wiredVariable": {
+    title: "This variable follows a value another service publishes",
+    reason: "It cannot be set by hand.",
+    fixes: ["Remove it with ajs-cloud env unset, then set it"],
+  },
+  "api.invalidVariableKey": {
+    title: "The variable name is not one the platform accepts",
+    fixes: ["Name it like NEXT_PUBLIC_SITE_URL"],
+  },
+  "api.emptyVariableValue": {
+    title: "A variable cannot have an empty value",
+    fixes: ["Give it a value, or remove it with ajs-cloud env unset"],
   },
   "api.unreadableSource": {
     title: "The API could not read the uploaded source",

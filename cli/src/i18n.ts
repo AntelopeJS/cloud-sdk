@@ -84,6 +84,20 @@ const MESSAGES = {
     logsNotDeployed:
       "This service has no deployment yet, so it has no logs: run ajs-cloud deploy first",
     logsEmpty: "No logs in the last hour",
+    columnKey: "Key",
+    columnValue: "Value",
+    columnBuild: "Build",
+    secretValue: "(secret)",
+    wiredValue: "wired from {service}",
+    buildTimeOn: "build and runtime",
+    buildTimeOff: "runtime",
+    noVariables: "No variables",
+    settingVariable: "Setting {key} on {service}",
+    variableSet: "{key} set on {service}: the next deployment reads it",
+    removingVariable: "Removing {key} from {service}",
+    variableRemoved: "{key} removed from {service}",
+    buildTimePublic:
+      "{key} is public: its value is written into the image, where anyone who can pull it reads it",
   },
   fr: {
     userCode: "Code :",
@@ -168,6 +182,20 @@ const MESSAGES = {
     logsNotDeployed:
       "Ce service n’a encore aucun déploiement, donc aucun log : lancez d’abord ajs-cloud deploy",
     logsEmpty: "Aucun log dans la dernière heure",
+    columnKey: "Clé",
+    columnValue: "Valeur",
+    columnBuild: "Build",
+    secretValue: "(secret)",
+    wiredValue: "fourni par {service}",
+    buildTimeOn: "build et exécution",
+    buildTimeOff: "exécution",
+    noVariables: "Aucune variable",
+    settingVariable: "Définition de {key} sur {service}",
+    variableSet: "{key} défini sur {service} : le prochain déploiement le lit",
+    removingVariable: "Suppression de {key} de {service}",
+    variableRemoved: "{key} supprimé de {service}",
+    buildTimePublic:
+      "{key} est public : sa valeur est écrite dans l’image, où quiconque peut la récupérer la lit",
   },
 } as const;
 

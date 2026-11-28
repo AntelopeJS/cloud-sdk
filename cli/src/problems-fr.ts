@@ -8,6 +8,10 @@ const NON_CONSTRUCTIBLE_CORRECTIFS = [
   "Ajoutez un Dockerfile, ou un package.json avec un script start",
   "Ou lancez la commande depuis le dossier de l’app elle-même",
 ];
+const REGLE_NOM_BUILD =
+  "Une variable de build se nomme en majuscules ([A-Z_][A-Z0-9_]*) et n’est pas un nom que le build réserve : BUILD_COMMAND, NODE_ENV, ANTELOPEJS_LAUNCH_ENV, BUILD_DATE, VCS_REF, VERSION, BUILDKIT_* et les noms de proxy (HTTP_PROXY, HTTPS_PROXY, FTP_PROXY, NO_PROXY, ALL_PROXY).";
+const REGLE_VALEUR_BUILD =
+  "Une valeur de build tient sur une ligne de 1024 caractères au plus, sans caractère de contrôle.";
 const REGLE_CHEMIN_DEPOT =
   "Le chemin est relatif au dépôt : lettres, chiffres, points, tirets et tirets bas, séparés par une barre oblique, 255 caractères au plus.";
 
@@ -85,6 +89,22 @@ export const FR: ProblemTexts = {
     reason:
       "Un Dockerfile se donne sous la forme <service>=<chemin>, pour un service que --service associe.",
     fixes: ["Passez-le ainsi : --dockerfile app=docker/app.Dockerfile"],
+  },
+  invalid_variable_assignment: {
+    title: "Variable invalide « {detail} »",
+    reason:
+      "Une variable se donne sous la forme CLE=valeur, avec une valeur non vide.",
+    fixes: ["Passez-la ainsi : NEXT_PUBLIC_SITE_URL=https://shop.example"],
+  },
+  invalid_build_time_name: {
+    title: "{detail} ne peut pas être une variable de build",
+    reason: REGLE_NOM_BUILD,
+    fixes: ["Renommez-la, ou définissez-la sans --build-time"],
+  },
+  invalid_build_time_value: {
+    title: "La valeur de {detail} ne peut pas être un argument de build",
+    reason: REGLE_VALEUR_BUILD,
+    fixes: ["Ramenez-la à une ligne, ou définissez-la sans --build-time"],
   },
   invalid_service_root: {
     title: "Valeur --root invalide « {detail} »",
@@ -318,6 +338,48 @@ export const FR: ProblemTexts = {
     fixes: [
       "Passez-la en secret dans la console pour garder une valeur plus longue",
     ],
+  },
+  "api.buildTimeSecret": {
+    title: "Un secret n’est jamais disponible au build",
+    reason:
+      "Sa valeur serait écrite dans l’image, où quiconque peut la récupérer la lit.",
+    fixes: [
+      "Définissez-le avec --plain --build-time si la valeur peut être publique",
+      "Ou définissez-le sans --build-time",
+    ],
+  },
+  "api.buildTimeName": {
+    title: "Le build réserve ce nom de variable",
+    reason: REGLE_NOM_BUILD,
+    fixes: ["Renommez-la, ou définissez-la sans --build-time"],
+  },
+  "api.buildTimeValue": {
+    title: "La valeur ne peut pas être un argument de build",
+    reason: REGLE_VALEUR_BUILD,
+    fixes: ["Ramenez-la à une ligne, ou définissez-la sans --build-time"],
+  },
+  "api.buildTimeLimit": {
+    title: "Le service a atteint sa limite de variables de build",
+    reason:
+      "Un service transmet au plus 32 variables, 64 Kio en tout, à ses builds.",
+    fixes: ["Définissez certaines d’entre elles sans --build-time"],
+  },
+  "api.unknownVariable": {
+    title: "Le service n’a pas cette variable",
+    fixes: ["Lancez ajs-cloud env list pour voir ses variables"],
+  },
+  "api.wiredVariable": {
+    title: "Cette variable suit une valeur publiée par un autre service",
+    reason: "Elle ne se définit pas à la main.",
+    fixes: ["Supprimez-la avec ajs-cloud env unset, puis définissez-la"],
+  },
+  "api.invalidVariableKey": {
+    title: "Le nom de la variable n’est pas accepté par la plateforme",
+    fixes: ["Nommez-la comme NEXT_PUBLIC_SITE_URL"],
+  },
+  "api.emptyVariableValue": {
+    title: "Une variable ne peut pas avoir une valeur vide",
+    fixes: ["Donnez-lui une valeur, ou supprimez-la avec ajs-cloud env unset"],
   },
   "api.nodeVersionUnsupported": {
     title:

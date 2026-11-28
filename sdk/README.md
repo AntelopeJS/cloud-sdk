@@ -162,6 +162,55 @@ await api.setServiceExposure(serviceId, true); // false closes it again
 
 `setServiceExposure` refuses a service without a port with `cloud.errors.settings.public_needs_port`.
 
+## Variables
+
+`listVariables` lists the variables of every service of an environment, those wired from a resource included; a secret's `value` is always `null`. `setVariable` creates or changes one variable of a service: a new variable is a secret unless `secret` is `false`, and a held variable keeps its kind. `deleteVariable` removes one:
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const projectId = "…";
+const environmentId = "…";
+const serviceId = "…";
+
+await api.setVariable(projectId, environmentId, serviceId, "API_KEY", {
+  value: "…", // a secret: never read back
+});
+await api.setVariable(projectId, environmentId, serviceId, "LOG_LEVEL", {
+  value: "info",
+  secret: false,
+});
+const { variables } = await api.listVariables(projectId, environmentId);
+console.log(variables.map((variable) => `${variable.key} ${variable.secret ? "(secret)" : variable.value}`));
+await api.deleteVariable(projectId, environmentId, serviceId, "LOG_LEVEL");
+```
+
+### Build-time variables
+
+A visible value with `buildTime: true` is also handed to the service's builds as a Docker build argument, for a value the framework bakes into the bundle (`NEXT_PUBLIC_*`, `VITE_*`); a change to it rebuilds the service. **A build-time variable is public:** its value lands in the image's layer history and provenance, where anyone who can pull the image reads it. That is why only a visible value carries the mark: a new variable needs `secret: false` with it, and a secret is refused with `cloud.errors.settings.entry.build_time_secret`.
+
+```ts
+import { CloudApi } from "@antelopejs/cloud-sdk";
+
+const api = new CloudApi({ token: process.env.ANTELOPE_CLOUD_TOKEN! });
+const projectId = "…";
+const environmentId = "…";
+const serviceId = "…";
+
+await api.setVariable(projectId, environmentId, serviceId, "NEXT_PUBLIC_SITE_URL", {
+  value: "https://shop.example",
+  secret: false,
+  buildTime: true,
+});
+await api.setVariable(projectId, environmentId, serviceId, "NEXT_PUBLIC_SITE_URL", {
+  value: "https://shop.example",
+  buildTime: false, // back to a runtime-only variable
+});
+```
+
+A write without `buildTime` keeps the mark a held variable has. Every listed variable carries `buildTime` (false for secrets and wired variables); an API older than the field leaves it out. The name is upper case (`^[A-Z_][A-Z0-9_]*$`) and not one the build reserves (`BUILD_COMMAND`, `NODE_ENV`, `ANTELOPEJS_LAUNCH_ENV`, `BUILD_DATE`, `VCS_REF`, `VERSION`, `BUILDKIT_*` and the proxy names `HTTP_PROXY`, `HTTPS_PROXY`, `FTP_PROXY`, `NO_PROXY`, `ALL_PROXY`), else `cloud.errors.settings.entry.build_time_name`; the value is one line of at most 1024 characters without control characters, else `cloud.errors.settings.entry.build_time_value`. A service marks at most 32 variables, 64 KiB encoded in all: `cloud.errors.settings.build_time_limit` beyond.
+
 ## List a project's deployments
 
 `api.projectDeployments.list` returns one page of deployments across all environments, newest first. Follow `nextCursor` while it is not `null`, with the same filters:

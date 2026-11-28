@@ -16,6 +16,7 @@ import { asInvoked } from "./invocation.js";
 import { defaultRuntime } from "./runtime.js";
 import type {
   DeployOptions,
+  EnvSetOptions,
   GlobalOptions,
   LinkOptions,
   LogsOptions,
@@ -23,6 +24,7 @@ import type {
 } from "./types.js";
 import {
   validateDeployArguments,
+  validateEnvArguments,
   validateGlobalOptions,
   validateLinkOptions,
 } from "./validation.js";
@@ -258,6 +260,105 @@ function linkCommand(runtime: Runtime): Command {
   ]);
 }
 
+function envListCommand(runtime: Runtime): Command {
+  return new Command("list")
+    .argument(
+      "[service]",
+      "Service whose variables to list (default: every service)",
+    )
+    .summary("List the variables")
+    .description(
+      "List the variables of the linked project's services: the value of a visible one, (secret) for a secret, the service a wired one follows, and whether the builds get it too.",
+    )
+    .action(async (service: string | undefined, _, self: Command) => {
+      const options = globals(self);
+      validateEnvArguments(service);
+      await (await actions(options)).envList(runtime, options, service);
+    });
+}
+
+function envSetCommand(runtime: Runtime): Command {
+  return new Command("set")
+    .argument("<service>", "Service the variable is set on")
+    .argument("<KEY=value>", "The variable and its value")
+    .summary("Set a variable")
+    .description(
+      "Set a variable of a service: created as a secret unless --plain is given, kept as it is when the service already holds it. The next deployment reads it. With --build-time, a visible value also reaches the service's builds as a Docker build argument, for a value the framework bakes into the bundle (NEXT_PUBLIC_*, VITE_*): that value is public, written into the image where anyone who can pull it reads it.",
+    )
+    .option(
+      "--plain",
+      "Create the variable with a value that can be read back, not as a secret",
+    )
+    .option(
+      "--build-time",
+      "Also hand the variable to the builds as a build argument: implies --plain, and the value is public",
+    )
+    .option("--no-build-time", "Stop handing the variable to the builds")
+    .action(
+      async (
+        service: string,
+        assignment: string,
+        setOptions: EnvSetOptions,
+        self: Command,
+      ) => {
+        const options = globals(self);
+        validateEnvArguments(service, assignment, setOptions);
+        await (
+          await actions(options)
+        ).envSet(runtime, options, service, assignment, setOptions);
+      },
+    );
+}
+
+function envUnsetCommand(runtime: Runtime): Command {
+  return new Command("unset")
+    .argument("<service>", "Service holding the variable")
+    .argument("<KEY>", "The variable to remove")
+    .summary("Remove a variable")
+    .description(
+      "Remove a variable of a service, a wired one included. The next deployment no longer has it.",
+    )
+    .action(async (service: string, key: string, _, self: Command) => {
+      const options = globals(self);
+      validateEnvArguments(service);
+      await (await actions(options)).envUnset(runtime, options, service, key);
+    });
+}
+
+function envCommand(runtime: Runtime): Command {
+  const command = new Command("env")
+    .summary("Read and set the variables of a service")
+    .description(
+      "Read and set the environment variables of the linked project's services, in its production environment. A value is a secret unless --plain says otherwise; a variable set with --build-time also reaches the builds, where its value is public.",
+    )
+    .addCommand(envListCommand(runtime))
+    .addCommand(envSetCommand(runtime))
+    .addCommand(envUnsetCommand(runtime));
+  return withInvokedExamples(command, [
+    {
+      description: "List the variables of every service",
+      command: "ajs-cloud env list",
+    },
+    {
+      description: "Set a secret, never read back",
+      command: "ajs-cloud env set api STRIPE_KEY=sk_live_...",
+    },
+    {
+      description: "Set a visible value",
+      command: "ajs-cloud env set api LOG_LEVEL=info --plain",
+    },
+    {
+      description: "Bake a public value into the builds of a Next.js app",
+      command:
+        "ajs-cloud env set web NEXT_PUBLIC_SITE_URL=https://shop.example --build-time",
+    },
+    {
+      description: "Remove a variable",
+      command: "ajs-cloud env unset api LOG_LEVEL",
+    },
+  ]);
+}
+
 function statusCommand(runtime: Runtime): Command {
   return new Command("status")
     .summary("Show the state of each service")
@@ -348,6 +449,7 @@ const COMMANDS = [
   whoamiCommand,
   deployCommand,
   linkCommand,
+  envCommand,
   statusCommand,
   openCommand,
   logsCommand,

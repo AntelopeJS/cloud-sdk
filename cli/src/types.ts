@@ -69,6 +69,18 @@ export interface ServiceLayout {
   sharedPaths?: string[];
 }
 
+/** Options of `env set`. */
+export interface EnvSetOptions {
+  /** Create the variable with a value that can be read back, not as a secret. */
+  plain?: boolean;
+  /**
+   * `--build-time` marks the variable as a build argument of the service's
+   * builds, `--no-build-time` clears the mark; left out, a held variable keeps
+   * its mark.
+   */
+  buildTime?: boolean;
+}
+
 export interface Runtime {
   cwd: string;
   configHome: string;

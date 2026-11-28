@@ -1,6 +1,7 @@
 import createClient from "openapi-fetch";
 import { InvalidApiResponseError } from "./api-error.js";
 import { ProjectDeploymentsApi } from "./deployments.js";
+import { DEFAULT_API_URL, type EndpointOptions } from "./endpoint.js";
 import { EnvironmentsApi, ProjectRepositoryApi } from "./environments.js";
 import type { components, paths } from "./generated/cloud-api.js";
 import { isRecord, isString } from "./guards.js";
@@ -21,8 +22,6 @@ export interface DeploymentReceipt {
   status: "queued";
 }
 
-export type DeviceAuthorization = components["schemas"]["DeviceAuthorization"];
-export type DeviceToken = components["schemas"]["DeviceToken"];
 export type EnvironmentVariable = components["schemas"]["EnvironmentVariable"];
 export type EnvironmentVariableList =
   components["schemas"]["EnvironmentVariableList"];
@@ -41,17 +40,6 @@ export type VariableOrigin = components["schemas"]["VariableOrigin"];
 export type VariableWrite = components["schemas"]["VariableWrite"];
 export type WorkspaceProvisioning =
   components["schemas"]["WorkspaceProvisioning"];
-
-/** The production Cloud API, used when no `baseUrl` is given. */
-export const DEFAULT_API_URL = "https://api.antelopejs.cloud";
-
-/** Where requests go and how they are sent, without a session. */
-export interface EndpointOptions {
-  /** The API origin, such as a test deployment. Defaults to {@link DEFAULT_API_URL}. */
-  baseUrl?: string;
-  /** Sends every request, in place of the global `fetch`. */
-  fetch?: typeof fetch;
-}
 
 /** A client signed in with a token. */
 export interface CloudApiOptions extends EndpointOptions {
@@ -95,13 +83,6 @@ function errorBodyOf(text: string): ApiErrorBody | undefined {
   } catch {
     return text;
   }
-}
-
-function endpointClient(options: EndpointOptions = {}) {
-  return createClient<paths>({
-    baseUrl: options.baseUrl ?? DEFAULT_API_URL,
-    fetch: options.fetch,
-  });
 }
 
 /** The Cloud API, signed in with one token. Every refusal is a {@link CloudApiError}. */
@@ -204,7 +185,15 @@ export class CloudApi {
     return dataOf(result);
   }
 
-  /** Secret values are write-only: the answer never carries one. */
+  /**
+   * Sets a variable of a service and answers it as listed. Secret values are
+   * write-only: the answer never carries one. `buildTime: true` also hands a
+   * visible value to the service's builds as a build argument (`NEXT_PUBLIC_*`,
+   * `VITE_*`); that value is public, written into the image. A new variable
+   * needs `secret: false` with it; a secret is refused with
+   * `cloud.errors.settings.entry.build_time_secret`, a reserved or lower-case
+   * name with `cloud.errors.settings.entry.build_time_name`.
+   */
   async setVariable(
     projectId: string,
     environmentId: string,
@@ -541,34 +530,4 @@ export class CloudApi {
     onOpen?.();
     yield* parseSse(response);
   }
-}
-
-/**
- * Starts a device login (RFC 8628): the codes a person approves in the console.
- *
- * @param deviceName How the console names the device asking for a token
- * @throws {CloudApiError} carrying `retryAfterS` when the API rate-limits logins
- */
-export async function createDevice(
-  deviceName: string,
-  options?: EndpointOptions,
-): Promise<DeviceAuthorization> {
-  const result = await endpointClient(options).POST("/api/cloud/cli/device", {
-    body: { device_name: deviceName },
-  });
-  return dataOf(result);
-}
-
-/**
- * Trades an approved device code for a token. Until a person approves it,
- * the API refuses with `authorization_pending` or `slow_down`.
- */
-export async function exchangeDevice(
-  deviceCode: string,
-  options?: EndpointOptions,
-): Promise<DeviceToken> {
-  const result = await endpointClient(options).POST("/api/cloud/cli/token", {
-    body: { device_code: deviceCode },
-  });
-  return dataOf(result);
 }

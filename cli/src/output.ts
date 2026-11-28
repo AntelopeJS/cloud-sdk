@@ -15,6 +15,7 @@ import type {
   ProjectConfig,
   Runtime,
 } from "./types.js";
+import type { VariableRow } from "./variables.js";
 
 const OUTPUT_VERSION = 1;
 
@@ -74,6 +75,11 @@ interface CliRecords {
   workspace_ready: Pick<WorkspaceProvisioning, "phase">;
   log: LogData & { service: string; cursor: string | null };
   status: { project: string; services: ServiceStatus[] };
+  variables: { project: string; environment: string; variables: VariableRow[] };
+  variable_set: VariableRow;
+  variable_removed: { service: string; key: string };
+  /** The variable the builds get, whose value is now public. */
+  build_time_public: { service: string; key: string };
 }
 
 /** Writes one versioned JSON Lines record on stdout. */
