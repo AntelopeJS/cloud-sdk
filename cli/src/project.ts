@@ -2,7 +2,7 @@ import { realpath } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 import type { components } from "@antelopejs/cloud-sdk";
 import { CliError } from "./errors.js";
-import type { ProjectConfig, ServicePath } from "./types.js";
+import type { ProjectConfig, ServiceLayout, ServicePath } from "./types.js";
 
 export type Project = components["schemas"]["Project"];
 export type Service = components["schemas"]["Service"];
@@ -159,6 +159,81 @@ export function withServiceDockerfiles(
       return [name, dockerfile ? { ...service, dockerfile } : service];
     }),
   );
+}
+
+/** The API's limit on the shared paths of one service. */
+const MAX_SHARED_PATHS = 20;
+const REPOSITORY_PATH_MAX_LENGTH = 255;
+/** Plain segments joined by `/`: no leading slash, backslash, blank or drive. */
+const REPOSITORY_PATH_PATTERN = /^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
+
+/**
+ * Whether the API would accept a path as a file or folder inside a
+ * repository: relative, made of plain segments, none of them `.` or `..`.
+ * The same rule the API applies, so a bad value is a usage error here and
+ * never a request.
+ */
+function isValidRepositoryPath(path: string): boolean {
+  return (
+    path.length <= REPOSITORY_PATH_MAX_LENGTH &&
+    REPOSITORY_PATH_PATTERN.test(path) &&
+    path.split("/").every((segment) => segment !== "." && segment !== "..")
+  );
+}
+
+/**
+ * The `<service>=<path>` values of one option, each for a service `--service`
+ * maps and each a repository path, refused under `code` otherwise.
+ */
+function repositoryPathAssignments(
+  services: Record<string, ServicePath>,
+  values: string[],
+  code: string,
+): Array<[string, string]> {
+  return values.map((value) => {
+    const [name, path] = splitAssignment(value, code);
+    if (!Object.hasOwn(services, name)) throw new CliError(code, name);
+    if (!isValidRepositoryPath(path)) throw new CliError(code, path);
+    return [name, path];
+  });
+}
+
+/**
+ * How each repository service builds, from `--root <name>=<folder>` and
+ * `--shared <name>=<path>`: one root folder per service, and up to 20 shared
+ * paths, repeats kept once. A service named by neither has no layout.
+ */
+export function parseServiceLayouts(
+  services: Record<string, ServicePath>,
+  roots: string[],
+  shared: string[],
+): Map<string, ServiceLayout> {
+  const layouts = new Map<string, ServiceLayout>();
+  for (const [name, path] of repositoryPathAssignments(
+    services,
+    roots,
+    "invalid_service_root",
+  )) {
+    const layout = layouts.get(name) ?? {};
+    if (layout.rootPath !== undefined) {
+      throw new CliError("invalid_service_root", `${name}=${path}`);
+    }
+    layouts.set(name, { ...layout, rootPath: path });
+  }
+  for (const [name, path] of repositoryPathAssignments(
+    services,
+    shared,
+    "invalid_service_shared_path",
+  )) {
+    const layout = layouts.get(name) ?? {};
+    const paths = layout.sharedPaths ?? [];
+    if (paths.includes(path)) continue;
+    if (paths.length >= MAX_SHARED_PATHS) {
+      throw new CliError("invalid_service_shared_path", `${name}=${path}`);
+    }
+    layouts.set(name, { ...layout, sharedPaths: [...paths, path] });
+  }
+  return layouts;
 }
 
 export async function resolveServiceRoot(

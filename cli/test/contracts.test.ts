@@ -16,8 +16,10 @@ import { cloudApi } from "../src/api.js";
 import { createSourceArchive } from "../src/archive.js";
 import { mountCloudCommand } from "../src/command.js";
 import { readProjectConfig, writeProjectConfig } from "../src/config.js";
-import { describeApiError } from "../src/error-messages.js";
+import { describeApiError, describeFailure } from "../src/error-messages.js";
+import { CliError } from "../src/errors.js";
 import {
+  parseServiceLayouts,
   parseServicePaths,
   resolveServiceRoot,
   selectedServiceNames,
@@ -32,6 +34,7 @@ import {
   progressFrames,
   run,
   runBinary,
+  runFailure,
   serveMockApi,
   state,
 } from "./cli-fixture.js";
@@ -203,6 +206,149 @@ describe("contracts: Dockerfiles and streams", () => {
       () =>
         withServiceDockerfiles({ api: { path: "." } }, ["api=../Dockerfile"]),
       /service_path_outside_project/,
+    );
+  });
+});
+
+describe("contracts: the folder a repository service builds from", () => {
+  const services = { api: { path: "." } };
+
+  test("links a service with its root folder and shared paths, set on the service and kept out of the project file", async () => {
+    const current = await fixture();
+    state.sourceWrites = [];
+    await run(current.runtime, [
+      "--json",
+      "link",
+      "demo",
+      "--service",
+      "api=apps/api",
+      "--service",
+      "app=apps/app",
+      "--root",
+      "api=apps/api",
+      "--shared",
+      "api=packages/ui",
+      "--shared",
+      "api=pnpm-lock.yaml",
+      "--shared",
+      "api=packages/ui",
+    ]);
+    assert.deepEqual(state.sourceWrites, [
+      '/api/cloud/services/service-api/source-root-path {"path":"apps/api"}',
+      '/api/cloud/services/service-api/source-shared-paths {"paths":["packages/ui","pnpm-lock.yaml"]}',
+    ]);
+    const linked = parseJson(
+      await readFile(join(current.root, ".antelope", "cloud.json"), "utf8"),
+    );
+    assert.deepEqual(jsonAt(linked, "services"), {
+      api: { path: "apps/api" },
+      app: { path: "apps/app" },
+    });
+    const events = current.output.map((line) =>
+      jsonAt(parseJson(line), "type"),
+    );
+    assert.deepEqual(events, [
+      "service_root_set",
+      "service_shared_paths_set",
+      "project_linked",
+    ]);
+  });
+
+  test("refuses a root folder or shared path the API would refuse, before any request", async () => {
+    const refused = [
+      "web=apps/web",
+      "api=../web",
+      "api=/apps",
+      "api=apps/./web",
+      "api=apps//web",
+      "api=apps/",
+      "api=apps\\web",
+      "api=apps web",
+      "api=C:apps",
+      `api=${"a".repeat(256)}`,
+      "api=",
+      "=apps",
+      "api",
+    ];
+    for (const value of refused) {
+      assert.throws(
+        () => parseServiceLayouts(services, [value], []),
+        (error) =>
+          error instanceof CliError && error.code === "invalid_service_root",
+        value,
+      );
+      assert.throws(
+        () => parseServiceLayouts(services, [], [value]),
+        (error) =>
+          error instanceof CliError &&
+          error.code === "invalid_service_shared_path",
+        value,
+      );
+    }
+    assert.throws(
+      () =>
+        parseServiceLayouts(services, ["api=apps/web", "api=apps/admin"], []),
+      /invalid_service_root/,
+    );
+    const tooMany = Array.from({ length: 21 }, (_, i) => `api=packages/p${i}`);
+    assert.throws(
+      () => parseServiceLayouts(services, [], tooMany),
+      /invalid_service_shared_path/,
+    );
+    assert.deepEqual(
+      parseServiceLayouts(
+        services,
+        ["api=-rf"],
+        ["api=.hidden", `api=${"a".repeat(255)}`, "api=.hidden"],
+      ),
+      new Map([
+        ["api", { rootPath: "-rf", sharedPaths: [".hidden", "a".repeat(255)] }],
+      ]),
+    );
+    assert.deepEqual(parseServiceLayouts(services, [], []), new Map());
+
+    const current = await fixture();
+    const requestStart = state.requests.length;
+    const failure = await runFailure(current.runtime, [
+      "link",
+      "demo",
+      "--service",
+      "api=.",
+      "--root",
+      "api=../web",
+    ]);
+    assert.equal(failure.code, "invalid_service_root");
+    assert.equal(describeFailure(failure, "en")?.exitCode, 2);
+    assert.equal(state.requests.length, requestStart);
+  });
+});
+
+describe("contracts: a layout the API refuses", () => {
+  const NOT_A_REPOSITORY = "cloud.errors.settings.not_a_repository_source";
+
+  test("a service that builds no repository is refused by the API, told in both languages, and the folder stays as it was", async () => {
+    const current = await fixture();
+    await assert.rejects(
+      run(current.runtime, [
+        "link",
+        "demo",
+        "--service",
+        "worker=apps/api",
+        "--root",
+        "worker=apps/api",
+      ]),
+      (error) =>
+        error instanceof CloudApiError && error.code === NOT_A_REPOSITORY,
+    );
+    assert.deepEqual(await readProjectConfig(current.root), config());
+    const refusal = new CloudApiError(409, NOT_A_REPOSITORY);
+    assert.equal(
+      describeApiError(refusal, "en").title,
+      "This service does not build a repository",
+    );
+    assert.equal(
+      describeApiError(refusal, "fr").title,
+      "Ce service ne construit pas de dépôt",
     );
   });
 });

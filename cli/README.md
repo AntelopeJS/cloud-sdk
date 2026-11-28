@@ -74,6 +74,7 @@ examples.
 ```sh
 ajs cloud link my-project --service api=apps/api --service app=apps/app
 ajs cloud link my-project --service web=. --service frontend=. --dockerfile frontend=frontend.Dockerfile  # two services of one folder
+ajs cloud link my-project --service web=apps/web --root web=apps/web --shared web=packages/ui  # a repository service built from one folder of a monorepo
 ajs cloud deploy        # all services from the project root
 ajs cloud deploy api    # one named service
 cd apps/app && ajs cloud deploy # inferred from the configured path
@@ -81,6 +82,15 @@ ajs cloud logs api -f
 ajs cloud open [api]
 ajs cloud rollback api [revision-id]
 ```
+
+`--root <service>=<folder>` and `--shared <service>=<path>` configure a
+service that AntelopeJS Cloud builds from a GitHub repository: the folder of
+the repository it builds from, and the paths outside that folder a push
+rebuilds it for, such as a shared package or the lockfile. `link` sets them on
+the service through the API before it writes the project file, and refuses a
+path that is not a plain relative path inside the repository before any
+request. They do not apply to a service `deploy` uploads, which builds the
+folder `--service` maps: the API refuses them for it.
 
 ### First deploy
 
