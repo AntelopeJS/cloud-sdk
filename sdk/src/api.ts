@@ -200,7 +200,15 @@ export class CloudApi {
     return dataOf(result);
   }
 
-  /** Secret values are write-only: the answer never carries one. */
+  /**
+   * Sets a variable of a service and answers it as listed. Secret values are
+   * write-only: the answer never carries one. `buildTime: true` also hands a
+   * visible value to the service's builds as a build argument (`NEXT_PUBLIC_*`,
+   * `VITE_*`); that value is public, written into the image. A new variable
+   * needs `secret: false` with it; a secret is refused with
+   * `cloud.errors.settings.entry.build_time_secret`, a reserved or lower-case
+   * name with `cloud.errors.settings.entry.build_time_name`.
+   */
   async setVariable(
     projectId: string,
     environmentId: string,

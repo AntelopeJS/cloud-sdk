@@ -258,7 +258,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Lists the variables of every service of the environment, those wired from a resource included. Requires the project's deploy permission. Secret values are never returned. */
+        /** @description Lists the variables of every service of the environment, those wired from a resource included, each with its `buildTime` mark. Requires the project's deploy permission. Secret values are never returned. */
         get: operations["listVariables"];
         put?: never;
         post?: never;
@@ -276,7 +276,14 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Sets a variable of a service of the environment and answers the variable as listed. A key the service does not hold is created, as a secret unless `secret` is false; a held plain or secret variable keeps its kind. A variable wired from a resource is refused. Requires the project's deploy permission. */
+        /**
+         * @description Sets a variable of a service of the environment and answers the variable as listed. A
+         *     key the service does not hold is created, as a secret unless `secret` is false; a held
+         *     plain or secret variable keeps its kind. `buildTime` marks a visible value as a build
+         *     argument of the service's builds too, which makes its value public (see
+         *     `VariableWrite`); absent, a held variable keeps its mark. A variable wired from a
+         *     resource is refused. Requires the project's deploy permission.
+         */
         put: operations["setVariable"];
         post?: never;
         /** @description Removes a variable of a service of the environment, one wired from a resource included. Requires the project's deploy permission. */
@@ -615,6 +622,15 @@ export interface components {
             secret: boolean;
             /** @description The value in clear; null when the variable is secret, or when a `resource` variable follows a value that is not available. */
             value: string | null;
+            /**
+             * @description Whether the variable is also handed to the service's builds as a Docker build
+             *     argument, for a value the framework bakes into the bundle (`NEXT_PUBLIC_*`,
+             *     `VITE_*`); a change to it then rebuilds. Such a value is public: it lands in the
+             *     image's layer history and provenance, where anyone who can pull the image reads it.
+             *     Always false for a secret and for a `resource` variable. Absent from an API older
+             *     than this field.
+             */
+            buildTime?: boolean;
             origin: components["schemas"]["VariableOrigin"];
         };
         EnvironmentVariableList: {
@@ -625,6 +641,19 @@ export interface components {
             value: string;
             /** @description Whether a variable the service does not hold yet is created as a secret, which can never be read back. Defaults to true. A variable the service already holds keeps its kind, and one wired from a resource is refused. */
             secret?: boolean;
+            /**
+             * @description Whether the variable is also handed to the service's builds as a Docker build
+             *     argument (`NEXT_PUBLIC_*`, `VITE_*`). Its value is then public, written into the
+             *     image. Absent keeps the mark a held variable has; a new variable is then not marked.
+             *     Only a visible value carries the mark: a new variable needs `secret: false` with it,
+             *     and a secret is refused. The name is upper case, `^[A-Z_][A-Z0-9_]*$`, and not one
+             *     the build reserves (`BUILD_COMMAND`, `NODE_ENV`, `ANTELOPEJS_LAUNCH_ENV`,
+             *     `BUILD_DATE`, `VCS_REF`, `VERSION`, `BUILDKIT_*`, `HTTP_PROXY`, `HTTPS_PROXY`,
+             *     `FTP_PROXY`, `NO_PROXY`, `ALL_PROXY`); the value is one line of at most 1024
+             *     characters without control characters. A service marks at most 32 variables, 64 KiB
+             *     encoded in all.
+             */
+            buildTime?: boolean;
         };
         Service: {
             id: string;
@@ -1643,6 +1672,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnvironmentVariable"];
+                };
+            };
+            /** @description `cloud.errors.settings.entry.build_time_secret`: the mark on a variable that is, or is created as, a secret. `cloud.errors.settings.entry.build_time_name`: a marked variable whose name the build cannot take. `cloud.errors.settings.entry.build_time_value`: a marked variable whose value the build cannot take. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description `cloud.errors.settings.build_time_limit`: the service would hand more than 32 variables, or more than 64 KiB once encoded, to its builds. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
             default: components["responses"]["Error"];

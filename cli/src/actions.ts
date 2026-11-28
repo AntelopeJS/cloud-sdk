@@ -34,6 +34,7 @@ import type {
 } from "./types.js";
 
 export { deploy } from "./deploy.js";
+export { envList, envSet, envUnset } from "./env.js";
 export { logs } from "./logs.js";
 export { status } from "./status.js";
 
